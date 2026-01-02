@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b4ea5d61f2693f242abb8bec86224f3c, type: 3}
+  m_Name: GlyphsSteamDeck
+  m_EditorClassIdentifier: 
+  fontOverride: 28
+  DPad: {fileID: 21300000, guid: e7cc1c2b60a3e694099cbcfda3303760, type: 3}
+  DPU: {fileID: 21300000, guid: 59aa3f016b7d49f47bb9a4abbcb38b9c, type: 3}
+  DPR: {fileID: 21300000, guid: f7377384314c6d2449d71f7a468d1dfe, type: 3}
+  DPD: {fileID: 21300000, guid: 345f4653a4482cd489ec526bdfb72836, type: 3}
+  DPL: {fileID: 21300000, guid: ae26fe806176db34091618b44c80aec2, type: 3}
+  butN: {fileID: 21300000, guid: c61245b1c03c246478dc90dda59afef5, type: 3}
+  butE: {fileID: 21300000, guid: 3e54f59558539e24bbf8534171d062e8, type: 3}
+  butS: {fileID: 21300000, guid: 57b2ed37253493c43aa984283654239a, type: 3}
+  butW: {fileID: 21300000, guid: 4ca2a8f2e86857e44a94f1fa144f5372, type: 3}
+  leftStick: {fileID: 21300000, guid: e3bab88f02590a54fb022d9f9886b693, type: 3}
+  leftTrack: {fileID: 21300000, guid: 109c1661cd12e7c49b69cd72b514893e, type: 3}
+  left1Bump: {fileID: 21300000, guid: 33274e1de3992854cbcbca73a4015093, type: 3}
+  left2Trig: {fileID: 21300000, guid: 98a319f3b4e71eb4c837766ef131fdc7, type: 3}
+  left3Stick: {fileID: 21300000, guid: e4e9513df9aea3542bcc643b9ea9e006, type: 3}
+  left4: {fileID: 21300000, guid: db5aa877cc1bc294c94c970d6423dd06, type: 3}
+  left5: {fileID: 21300000, guid: 37c7edd8e7932a44783ff5413e891951, type: 3}
+  rightStick: {fileID: 21300000, guid: cec109ff3dfef7349aba55017870817f, type: 3}
+  rightTrack: {fileID: 21300000, guid: 94d223f8949f2a84dbfdbc4b624ab0df, type: 3}
+  right1Bump: {fileID: 21300000, guid: 9edf0a04ec3fd0e469c87a4dc1c6ad54, type: 3}
+  right2Trig: {fileID: 21300000, guid: 9c03c215922043740a327b2d50a26eeb, type: 3}
+  right3Stick: {fileID: 21300000, guid: 10068f9e1afce1446ab9d4757ca97387, type: 3}
+  right4: {fileID: 21300000, guid: 047e877d01d50dc4eaec981c4fd2d253, type: 3}
+  right5: {fileID: 21300000, guid: 1250d347c8621364b9447f89cdfa62dc, type: 3}
+  start: {fileID: 21300000, guid: 136001f74dff8f14e93e681d3a42ad7d, type: 3}
+  select: {fileID: 21300000, guid: c8267e8bd4071044b83d7b8930057ecc, type: 3}

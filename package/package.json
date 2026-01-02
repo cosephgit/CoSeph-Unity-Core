@@ -1,0 +1,7 @@
+{
+  "name": "com.coseph.unity.core",
+  "version": "1.0.0",
+  "displayName": "CoSeph Core Unity Library",
+  "unity": "2022.3",
+  "description": "Utilities"
+}

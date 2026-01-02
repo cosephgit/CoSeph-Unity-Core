@@ -1,0 +1,6 @@
+{
+  "name": "CoSeph.Core",
+  "rootNamespace": "CoSeph.Core",
+  "references": [],
+  "includePlatforms": []
+}

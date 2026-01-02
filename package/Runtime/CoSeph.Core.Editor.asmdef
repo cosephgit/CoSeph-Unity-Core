@@ -1,0 +1,6 @@
+{
+  "name": "CoSeph.Core.Editor",
+  "rootNamespace": "CoSeph.Core.Editor",
+  "references": ["CoSeph.Core"],
+  "includePlatforms": ["Editor"]
+}

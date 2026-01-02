@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "com.coseph.core": "file:../package"
+  }
+}
