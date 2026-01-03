@@ -8,16 +8,19 @@ using UnityEngine;
 // created 24/1/23
 // modified 24/1/23
 
-public enum BlockType
+namespace CoSeph.Core
 {
-    Clear, // no blockage
-    Pawn, // a pawn is blocking - might potentially move or be moveable
-    Block // something impassable is blocking
-}
+    public enum BlockType
+    {
+        Clear, // no blockage
+        Pawn, // a pawn is blocking - might potentially move or be moveable
+        Block // something impassable is blocking
+    }
 
 
-public abstract class CSNavBlockCheck : MonoBehaviour
-{
-    public abstract BlockType PointBlocked(Vector3 point, out float difficulty);
-    public abstract BlockType NodeBlocked(CSNavNode node, out float difficulty);
+    public abstract class CSNavBlockCheck : MonoBehaviour
+    {
+        public abstract BlockType PointBlocked(Vector3 point, out float difficulty);
+        public abstract BlockType NodeBlocked(CSNavNode node, out float difficulty);
+    }
 }

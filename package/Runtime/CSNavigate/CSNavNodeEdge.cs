@@ -8,7 +8,10 @@ using UnityEngine;
 // created 21/10/23
 // changed 21/10/23
 
-public class CSNavNodeEdge : MonoBehaviour
+namespace CoSeph.Core
 {
-    public bool blocking = true;
+    public class CSNavNodeEdge : MonoBehaviour
+    {
+        public bool blocking = true;
+    }
 }

@@ -7,66 +7,69 @@ using UnityEngine;
 // version 0.1
 // last update: 19/10/23
 
-public class StateMachine : MonoBehaviour
+namespace CoSeph.Core
 {
-    protected BaseState currentState;
-
-    protected virtual void Start()
+    public class StateMachine : MonoBehaviour
     {
-        Initialise();
-    }
+        protected BaseState currentState;
 
-    public void Initialise()
-    {
-        if (currentState != null)
-            currentState.Exit();
-        currentState = GetInitialState();
-        if (currentState != null)
-            currentState.Enter();
-    }
-
-    public void Disable()
-    {
-        if (currentState != null)
-            currentState.Exit();
-        currentState = GetDisabledState();
-        if (currentState != null)
-            currentState.Enter();
-    }
-
-    protected virtual void Update()
-    {
-        if (currentState != null)
+        protected virtual void Start()
         {
-            currentState.UpdateLogic();
+            Initialise();
         }
-    }
 
-    public void ChangeState(BaseState newState)
-    {
-        currentState.Exit();
-
-        currentState = newState;
-        currentState.Enter();
-    }
-
-    protected virtual BaseState GetInitialState()
-    {
-        return null;
-    }
-
-    protected virtual BaseState GetDisabledState()
-    {
-        return null;
-    }
-
-    // kept for reference
-    private void OnGUI()
-    {
-        if (Application.isEditor)
+        public void Initialise()
         {
-            //string content = currentState != null ? currentState.name : "(no current state)";
-            //GUILayout.Label($"<color='black'><size=40>{content}</size></color>");
+            if (currentState != null)
+                currentState.Exit();
+            currentState = GetInitialState();
+            if (currentState != null)
+                currentState.Enter();
+        }
+
+        public void Disable()
+        {
+            if (currentState != null)
+                currentState.Exit();
+            currentState = GetDisabledState();
+            if (currentState != null)
+                currentState.Enter();
+        }
+
+        protected virtual void Update()
+        {
+            if (currentState != null)
+            {
+                currentState.UpdateLogic();
+            }
+        }
+
+        public void ChangeState(BaseState newState)
+        {
+            currentState.Exit();
+
+            currentState = newState;
+            currentState.Enter();
+        }
+
+        protected virtual BaseState GetInitialState()
+        {
+            return null;
+        }
+
+        protected virtual BaseState GetDisabledState()
+        {
+            return null;
+        }
+
+        // kept for reference
+        private void OnGUI()
+        {
+            if (Application.isEditor)
+            {
+                //string content = currentState != null ? currentState.name : "(no current state)";
+                //GUILayout.Label($"<color='black'><size=40>{content}</size></color>");
+            }
         }
     }
 }

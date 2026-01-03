@@ -1,6 +1,6 @@
 {
   "name": "CoSeph.Core",
   "rootNamespace": "CoSeph.Core",
-  "references": [],
+  "references": ["Unity.Localization"],
   "includePlatforms": []
 }

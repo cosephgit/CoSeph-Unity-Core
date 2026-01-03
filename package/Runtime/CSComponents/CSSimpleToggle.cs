@@ -7,50 +7,53 @@ using UnityEngine;
 // created 26/2/25
 // modified 26/2/25
 
-public class CSSimpleToggle : MonoBehaviour
+namespace CoSeph.Core
 {
-    [SerializeField] private GameObject[] toggleObjects;
-    [SerializeField] private float offTime = 1f;
-    [SerializeField] private float onTime = 1f;
-    [SerializeField] private bool startActive = false;
-    private Coroutine toggleRoutine = null;
-
-    private void Start()
+    public class CSSimpleToggle : MonoBehaviour
     {
-        if (startActive)
-            StartToggle();
-    }
+        [SerializeField] private GameObject[] toggleObjects;
+        [SerializeField] private float offTime = 1f;
+        [SerializeField] private float onTime = 1f;
+        [SerializeField] private bool startActive = false;
+        private Coroutine toggleRoutine = null;
 
-    public void StartToggle()
-    {
-        if (toggleRoutine != null)
-            return;
-
-        toggleRoutine = StartCoroutine(Toggler());
-    }
-
-    public void StopToggle()
-    {
-        if (toggleRoutine != null)
+        private void Start()
         {
-            StopCoroutine(toggleRoutine);
-            toggleRoutine = null;
+            if (startActive)
+                StartToggle();
         }
-    }
 
-    private IEnumerator Toggler()
-    {
-        while (true)
+        public void StartToggle()
         {
-            for (int i = 0; i < toggleObjects.Length; i++)
-                toggleObjects[i].SetActive(true);
+            if (toggleRoutine != null)
+                return;
 
-            yield return new WaitForSeconds(onTime);
+            toggleRoutine = StartCoroutine(Toggler());
+        }
 
-            for (int i = 0; i < toggleObjects.Length; i++)
-                toggleObjects[i].SetActive(false);
+        public void StopToggle()
+        {
+            if (toggleRoutine != null)
+            {
+                StopCoroutine(toggleRoutine);
+                toggleRoutine = null;
+            }
+        }
 
-            yield return new WaitForSeconds(offTime);
+        private IEnumerator Toggler()
+        {
+            while (true)
+            {
+                for (int i = 0; i < toggleObjects.Length; i++)
+                    toggleObjects[i].SetActive(true);
+
+                yield return new WaitForSeconds(onTime);
+
+                for (int i = 0; i < toggleObjects.Length; i++)
+                    toggleObjects[i].SetActive(false);
+
+                yield return new WaitForSeconds(offTime);
+            }
         }
     }
 }
