@@ -16,15 +16,15 @@ namespace CoSeph.Core
     public class CSLocalizedText
     {
         [TextArea]
-        public string fallback;        // default / English
-        public LocalizedString loc;
+        public string _fallback;        // default / English
+        public LocalizedString _loc;
 
         public string Resolve()
         {
-            if (loc == null || loc.IsEmpty)
-                return fallback;
+            if (_loc == null || _loc.IsEmpty)
+                return _fallback;
 
-            return loc.GetLocalizedString();
+            return _loc.GetLocalizedString();
         }
 
     }

@@ -12,25 +12,25 @@ namespace CoSeph.Core
 {
     public class SaveAchievement
     {
-        public string id;
-        public float value;
+        public string _id;
+        public float _value;
     }
 
 
     public class CSAchievementManager : MonoBehaviour
     {
-        protected static CSAchievementManager instanceTrue;
-        private Dictionary<CSAchievement, float> achievementsGot;
-        private CSAchievement[] achievementsCache;
+        protected static CSAchievementManager _instance;
+        private Dictionary<CSAchievement, float> _achievementsGot;
+        private CSAchievement[] _achievementsCache;
         // for platform-specific achievement integration
         public delegate void AchievementSet(CSAchievement achievement, float value);
-        public static event AchievementSet achievementSet = delegate { };
+        public static event AchievementSet _achievementSet = delegate { };
 
         private void Awake()
         {
-            if (instanceTrue)
+            if (_instance)
             {
-                if (instanceTrue != this)
+                if (_instance != this)
                 {
                     Destroy(gameObject);
                     return;
@@ -38,51 +38,56 @@ namespace CoSeph.Core
             }
             else
             {
-                instanceTrue = this;
-                DontDestroyOnLoad(gameObject);
-                achievementsGot = new Dictionary<CSAchievement, float>();
-                achievementsCache = Resources.FindObjectsOfTypeAll<CSAchievement>();
+                _instance = this;
+                InitialiseInstance();
+            }
+        }
 
-                for (int i = 0; i < achievementsCache.Length - 1; i++)
+        private void InitialiseInstance()
+        {
+            DontDestroyOnLoad(gameObject);
+            _achievementsGot = new Dictionary<CSAchievement, float>();
+            _achievementsCache = Resources.FindObjectsOfTypeAll<CSAchievement>();
+
+            for (int i = 0; i < _achievementsCache.Length - 1; i++)
+            {
+                for (int j = 1; j < _achievementsCache.Length; j++)
                 {
-                    for (int j = 1; j < achievementsCache.Length; j++)
+                    if (i != j)
                     {
-                        if (i != j)
-                        {
-                            if (achievementsCache[i].unique == achievementsCache[j].unique)
-                                Debug.LogError("Found duplicate CSAchivement unique " + achievementsCache[j].unique);
-                        }
+                        if (_achievementsCache[i]._unique == _achievementsCache[j]._unique)
+                            Debug.LogError("Found duplicate CSAchivement unique " + _achievementsCache[j]._unique);
                     }
                 }
             }
         }
 
-        public static CSAchievementManager instance
+        public static CSAchievementManager Instance
         {
             get
             {
-                if (instanceTrue == null)
+                if (_instance == null)
                 {
                     return new GameObject("AchievementManager").AddComponent<CSAchievementManager>();
                 }
                 else
                 {
-                    return instanceTrue;
+                    return _instance;
                 }
             }
         }
 
         public Dictionary<CSAchievement, float> AchievementsGot()
         {
-            return new Dictionary<CSAchievement, float>(achievementsGot);
+            return new Dictionary<CSAchievement, float>(_achievementsGot);
         }
 
         public CSAchievement GetAchievementByName(string nameFind)
         {
-            for (int i = 0; i < achievementsCache.Length; i++)
+            for (int i = 0; i < _achievementsCache.Length; i++)
             {
-                if (achievementsCache[i].unique == nameFind)
-                    return achievementsCache[i];
+                if (_achievementsCache[i]._unique == nameFind)
+                    return _achievementsCache[i];
             }
             return null;
         }
@@ -90,18 +95,18 @@ namespace CoSeph.Core
         // add an amount to the progress on the achievement
         public void AchievementProgressAdd(CSAchievement achievement, float progress)
         {
-            if (achievementsGot.ContainsKey(achievement))
+            if (_achievementsGot.ContainsKey(achievement))
             {
-                achievementsGot[achievement] += progress;
+                _achievementsGot[achievement] += progress;
             }
             else
             {
-                achievementsGot.Add(achievement, progress);
+                _achievementsGot.Add(achievement, progress);
             }
             //Debug.Log("Achievement " + achievement.unique + " progress is " + achievementsGot[achievement]);
 
             // set the achievement to the platform
-            achievementSet(achievement, achievementsGot[achievement]);
+            _achievementSet(achievement, _achievementsGot[achievement]);
         }
 
         // set the achievement to the new value
@@ -113,43 +118,43 @@ namespace CoSeph.Core
                 Debug.Log("AchievementProgressSet called with null achievement");
                 return;
             }
-            if (achievementsGot.ContainsKey(achievement))
+            if (_achievementsGot.ContainsKey(achievement))
             {
                 if (increaseOnly)
                 {
-                    if (achievementsGot[achievement] < progress)
-                        achievementsGot[achievement] = progress;
+                    if (_achievementsGot[achievement] < progress)
+                        _achievementsGot[achievement] = progress;
                 }
                 else
-                    achievementsGot[achievement] = progress;
+                    _achievementsGot[achievement] = progress;
             }
             else
             {
-                achievementsGot.Add(achievement, progress);
+                _achievementsGot.Add(achievement, progress);
             }
             //Debug.Log("Achievement " + achievement.unique + " progress is " + achievementsGot[achievement]);
 
             // set the achievement to the platform
-            achievementSet(achievement, achievementsGot[achievement]);
+            _achievementSet(achievement, _achievementsGot[achievement]);
         }
 
         public void AchievementInitialise(List<SaveAchievement> savedAchievements)
         {
             for (int i = 0; i < savedAchievements.Count; i++)
             {
-                CSAchievement achievement = GetAchievementByName(savedAchievements[i].id);
+                CSAchievement achievement = GetAchievementByName(savedAchievements[i]._id);
                 if (achievement)
-                    AchievementProgressSet(achievement, savedAchievements[i].value, true);
+                    AchievementProgressSet(achievement, savedAchievements[i]._value, true);
                 else
-                    Debug.LogError("<color=green>Achievement</color> can't find achievement with saved id " + savedAchievements[i].id);
+                    Debug.LogError("<color=green>Achievement</color> can't find achievement with saved id " + savedAchievements[i]._id);
             }
         }
 
         public bool IsAchievementComplete(CSAchievement achievement)
         {
-            if (achievementsGot.ContainsKey(achievement))
+            if (_achievementsGot.ContainsKey(achievement))
             {
-                return (achievementsGot[achievement] >= achievement.max);
+                return (_achievementsGot[achievement] >= achievement._max);
             }
             return false;
         }

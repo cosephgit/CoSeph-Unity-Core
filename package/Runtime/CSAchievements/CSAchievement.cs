@@ -12,14 +12,14 @@ namespace CoSeph.Core
     [CreateAssetMenu(fileName = "Achievement", menuName = "CS/SO/Achievement", order = 0)]
     public class CSAchievement : ScriptableObject
     {
-        public string unique;
-        public CSLocalizedText locName = new CSLocalizedText();
-        public CSLocalizedText locDesc = new CSLocalizedText();
-        public Sprite iconGot;
-        public Sprite iconNotGot;
-        public float max;
-        public bool integer;
-        public string getName { get => locName.Resolve(); }
-        public string getDesc { get => locDesc.Resolve(); }
+        public string _unique;
+        public CSLocalizedText _locName = new CSLocalizedText();
+        public CSLocalizedText _locDesc = new CSLocalizedText();
+        public Sprite _iconGot;
+        public Sprite _iconNotGot;
+        public float _max;
+        public bool _integer;
+        public string GetName { get => _locName.Resolve(); }
+        public string GetDesc { get => _locDesc.Resolve(); }
     }
 }

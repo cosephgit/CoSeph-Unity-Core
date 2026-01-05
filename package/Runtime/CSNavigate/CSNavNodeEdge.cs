@@ -12,6 +12,6 @@ namespace CoSeph.Core
 {
     public class CSNavNodeEdge : MonoBehaviour
     {
-        public bool blocking = true;
+        public bool _blocking = true;
     }
 }

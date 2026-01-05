@@ -10,42 +10,53 @@ using UnityEngine;
 
 namespace CoSeph.Core
 {
+    [System.Serializable]
+    public class CSParallaxLayer
+    {
+        public Transform _layer;
+        public float _distance;
+        [HideInInspector]public float _scale;
+    }
+
     public class CSParallax : MonoBehaviour
     {
-        [SerializeField] private Transform follow;
-        [Header("Each parallax layer and the virtual distance")]
-        [SerializeField] private Transform[] layers;
-        [SerializeField] private float[] distances;
-        private Vector3 posOld;
-        private int layerCount;
-        private float[] layerScale;
+        [SerializeField] private Transform _follow;
+        [SerializeField] private bool _followCam;
+        [SerializeField] private CSParallaxLayer[] _layers;
+        private Vector3 _posOld;
+        private int _layerCount;
 
         private void Awake()
         {
-            if (!follow) follow = Camera.main.transform;
-            posOld = new Vector3(follow.position.x, follow.position.y);
-            layerCount = layers.Length;
-            layerScale = new float[layerCount];
-            for (int i = 0; i < layerCount; i++)
+            if (_followCam)
+            {
+                _follow = Camera.main.transform;
+            }
+            _posOld = new Vector3(_follow.position.x, _follow.position.y);
+            _layerCount = _layers.Length;
+            for (int i = 0; i < _layerCount; i++)
             {
                 float dist = 1f;
-                if (distances.Length > i) dist = distances[i];
+                if (_layers[i]._distance > i) dist = _layers[i]._distance;
 
-                layerScale[i] = 1f - (1f / dist);
+                _layers[i]._scale = 1f - (1f / dist);
             }
         }
 
         private void Update()
         {
-            if (follow.position.x != posOld.x || follow.position.y != posOld.y)
+            if (_follow)
             {
-                posOld.x = follow.position.x;
-                posOld.y = follow.position.y;
-
-
-                for (int i = 0; i < layerCount; i++)
+                if (_follow.position.x != _posOld.x || _follow.position.y != _posOld.y)
                 {
-                    layers[i].transform.position = posOld * layerScale[i];
+                    _posOld.x = _follow.position.x;
+                    _posOld.y = _follow.position.y;
+
+
+                    for (int i = 0; i < _layerCount; i++)
+                    {
+                        _layers[i]._layer.position = _posOld * _layers[i]._scale;
+                    }
                 }
             }
         }

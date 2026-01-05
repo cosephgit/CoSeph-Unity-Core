@@ -73,77 +73,77 @@ namespace CoSeph.Core
 
     public class CSNavigate : MonoBehaviour
     {
-        public static CSNavigate instance;
-        [field: Header("Pathfinding settings")]
-        [field: SerializeField] public NavType type { get; private set; } = NavType.Nav2DOrtho;
-        //[field: SerializeField] public CSNavBlockCheck blockCheck { get; private set; } // interface for checking for blocked nodes
-        [SerializeField] private float pathDivertPawnWeight = 4f;
-        [SerializeField] private float pathDivertMult = 4; // when accepting blocked routes, an unblocked route will be picked if it is no more than this times the blocked route
-        [SerializeField] private float pathDivertFlat = 4; // when accepting blocked routes, an unblocked route will be picked if it is no more than this amount more than the blocked route
-        [SerializeField] private float pathFindMax = 20f;
+        public static CSNavigate _instance;
+        [Header("Pathfinding settings")]
+        [SerializeField] private NavType _type = NavType.Nav2DOrtho;
+        [SerializeField] private float _pathDivertPawnWeight = 4f;
+        [SerializeField] private float _pathDivertMult = 4; // when accepting blocked routes, an unblocked route will be picked if it is no more than this times the blocked route
+        [SerializeField] private float _pathDivertFlat = 4; // when accepting blocked routes, an unblocked route will be picked if it is no more than this amount more than the blocked route
+        [SerializeField] private float _pathFindMax = 20f;
         [Header("Layer names")]
-        [SerializeField] private string layerNavString = "NavNode";
-        [SerializeField] private string layerNavStringObstacle = "NavNodeEdge"; // obstacles that may appear between nodes as a barrier e.g. windows, doors
-        [HideInInspector] public List<CSNavNode> navNodeMap = new List<CSNavNode>();
-        [HideInInspector] public List<CSNavNode> navNodeDirty = new List<CSNavNode>();
-
-        private LayerMask layerNav;
-        private LayerMask layerPawn;
-        private LayerMask layerNavEdge;
+        [SerializeField] private string _layerNavString = "NavNode";
+        [SerializeField] private string _layerNavStringObstacle = "NavNodeEdge"; // obstacles that may appear between nodes as a barrier e.g. windows, doors
+        [HideInInspector] public List<CSNavNode> _navNodeMap = new List<CSNavNode>();
+        [HideInInspector] public List<CSNavNode> _navNodeDirty = new List<CSNavNode>();
+        private LayerMask _layerNav;
+        private LayerMask _layerPawn;
+        private LayerMask _layerNavEdge;
+        public static CSNavigate Instance { get => _instance ? _instance : null; }
+        public static NavType Navigation { get => _instance._type; }
 
         private void Awake()
         {
-            if (instance)
+            if (_instance)
             {
-                if (instance != this)
+                if (_instance != this)
                 {
                     Destroy(gameObject);
                     return;
                 }
             }
-            else instance = this;
+            else _instance = this;
         }
 
         public void ClearNavNetwork()
         {
-            for (int i = 0; i < navNodeMap.Count; i++)
-                Destroy(navNodeMap[i].gameObject);
-            for (int i = 0; i < navNodeDirty.Count; i++)
-                Destroy(navNodeDirty[i].gameObject);
-            navNodeMap.Clear();
-            navNodeDirty.Clear();
+            for (int i = 0; i < _navNodeMap.Count; i++)
+                Destroy(_navNodeMap[i].gameObject);
+            for (int i = 0; i < _navNodeDirty.Count; i++)
+                Destroy(_navNodeDirty[i].gameObject);
+            _navNodeMap.Clear();
+            _navNodeDirty.Clear();
         }
 
         public LayerMask LayerNav()
         {
-            if (layerNav == 0) layerNav = LayerMask.GetMask(layerNavString);
-            return layerNav;
+            if (_layerNav == 0) _layerNav = LayerMask.GetMask(_layerNavString);
+            return _layerNav;
         }
 
         public LayerMask LayerNavEdge()
         {
-            if (layerNavEdge == 0) layerNavEdge = LayerMask.GetMask(layerNavStringObstacle);
-            return layerNavEdge;
+            if (_layerNavEdge == 0) _layerNavEdge = LayerMask.GetMask(_layerNavStringObstacle);
+            return _layerNavEdge;
         }
 
         public void Initialise()
         {
-            navNodeDirty.Clear();
+            _navNodeDirty.Clear();
 
-            for (int i = 0; i < navNodeMap.Count; i++)
+            for (int i = 0; i < _navNodeMap.Count; i++)
             {
-                Destroy(navNodeMap[i].gameObject);
+                Destroy(_navNodeMap[i].gameObject);
             }
-            navNodeMap.Clear();
+            _navNodeMap.Clear();
         }
 
         void CleanNavNodes()
         {
-            for (int i = 0; i < navNodeDirty.Count; i++)
+            for (int i = 0; i < _navNodeDirty.Count; i++)
             {
-                navNodeDirty[i].PathClear();
+                _navNodeDirty[i].PathClear();
             }
-            navNodeDirty.Clear();
+            _navNodeDirty.Clear();
         }
 
         // gets the node at the provided point
@@ -152,7 +152,7 @@ namespace CoSeph.Core
         {
             CSNavNode originNode = null;
 
-            switch (type)
+            switch (_type)
             {
                 default:
                 case NavType.Nav2DOrtho:
@@ -179,13 +179,13 @@ namespace CoSeph.Core
                 // have not found a node nearby and willing to take the closest node, so cycle through all nodes to find the closest
                 float closestDist = Mathf.Infinity;
 
-                for (int i = 0; i < navNodeMap.Count; i++)
+                for (int i = 0; i < _navNodeMap.Count; i++)
                 {
-                    float dist = (pos - navNodeMap[i].transform.position).magnitude;
+                    float dist = (pos - _navNodeMap[i].transform.position).magnitude;
                     if (dist < closestDist)
                     {
                         closestDist = dist;
-                        originNode = navNodeMap[i];
+                        originNode = _navNodeMap[i];
                     }
                 }
             }
@@ -202,7 +202,7 @@ namespace CoSeph.Core
         {
             Vector3 offset = target - origin;
 
-            switch (type)
+            switch (_type)
             {
                 default:
                 case NavType.Nav2DOrtho:
@@ -215,7 +215,7 @@ namespace CoSeph.Core
                         {
                             CSNavNodeEdge obstacle = collide.GetComponent<CSNavNodeEdge>();
 
-                            if (obstacle && obstacle.blocking) return true;
+                            if (obstacle && obstacle._blocking) return true;
                         }
                         break;
                     }
@@ -226,7 +226,7 @@ namespace CoSeph.Core
                         {
                             CSNavNodeEdge obstacle = hit.transform.GetComponent<CSNavNodeEdge>();
 
-                            if (obstacle && obstacle.blocking) return true;
+                            if (obstacle && obstacle._blocking) return true;
                         }
                         break;
                     }
@@ -237,7 +237,7 @@ namespace CoSeph.Core
                         {
                             CSNavNodeEdge obstacle = hit[0].transform.GetComponent<CSNavNodeEdge>();
 
-                            if (obstacle && obstacle.blocking) return true;
+                            if (obstacle && obstacle._blocking) return true;
                         }
                         break;
                     }
@@ -275,12 +275,12 @@ namespace CoSeph.Core
         public List<CSNavNode> Pathfind(CSNavNode originNode, CSNavNode targetNode, CSNavProfile profile, out bool passed)
         {
             List<CSNavNode> result = new List<CSNavNode>();
-            float divertMult = pathDivertMult;
-            float distMax = profile.max;
-            if (profile.divertMultOverride > 0)
-                divertMult *= profile.divertMultOverride;
+            float divertMult = _pathDivertMult;
+            float distMax = profile._max;
+            if (profile._divertMultOverride > 0)
+                divertMult *= profile._divertMultOverride;
 
-            if (distMax < 0) distMax = pathFindMax;
+            if (distMax < 0) distMax = _pathFindMax;
 
             if (!originNode || !targetNode)
             {
@@ -299,8 +299,8 @@ namespace CoSeph.Core
             {
                 float fullHDist;
 
-                if (type == NavType.Nav2DOrtho)
-                    fullHDist = CSUtils.OrthogonalDist(originNode.transform.position, targetNode.transform.position);
+                if (_type == NavType.Nav2DOrtho)
+                    fullHDist = CSMath.OrthogonalDist(originNode.transform.position, targetNode.transform.position, true);
                 else
                     fullHDist = (targetNode.transform.position - originNode.transform.position).magnitude;
 
@@ -316,7 +316,7 @@ namespace CoSeph.Core
 
             CleanNavNodes();
             // build the pathfinding data to the target
-            if (profile.block == BlockHandling.Avoid || profile.block == BlockHandling.Divert)
+            if (profile._block == BlockHandling.Avoid || profile._block == BlockHandling.Divert)
                 originNode.PathFind(targetNode, null, 0f, distMax, profile);
             else // acceptBlocked == BlockHandling.Ignore, so just go straight in with the direct path search
                 originNode.PathFind(targetNode, null, 1f, distMax, profile);
@@ -324,20 +324,20 @@ namespace CoSeph.Core
             testList = BuildPath(targetNode);
             if (testList.Count > 0) result.AddRange(testList);
 
-            if (profile.block == BlockHandling.Divert)
+            if (profile._block == BlockHandling.Divert)
             {
                 // for the divert behaviour we need to pathfind again looking for the most favourable direct path
                 CleanNavNodes();
                 // direct path search and set nodes with pawns in more expensive (to choose the blocked path with the least blocking pawns)
                 // TODO this needs to be refined, to detect the path length before it reaches a pawn and choose the route that allows the most movement
-                originNode.PathFind(targetNode, null, pathDivertPawnWeight, distMax * pathDivertPawnWeight, profile);
+                originNode.PathFind(targetNode, null, _pathDivertPawnWeight, distMax * _pathDivertPawnWeight, profile);
                 testList = BuildPath(targetNode);
                 if (testList.Count > 0) resultDirect.AddRange(testList);
             }
 
             // we have a route to the target created now, it is in reverse order from LAST move to FIRST move
             if ((distMax > 0 && result.Count > distMax) || result.Count == 0
-                || (profile.block == BlockHandling.Divert && (resultDirect.Count * divertMult < result.Count || resultDirect.Count + pathDivertFlat < result.Count)))
+                || (profile._block == BlockHandling.Divert && (resultDirect.Count * divertMult < result.Count || resultDirect.Count + _pathDivertFlat < result.Count)))
             {
                 // either the open route is too long, there is no open route, or the open route is over PATHDIVERTMULTx the length of the direct route
                 // or the open route is over pathDivertFlat + the length of the direct route
@@ -345,7 +345,7 @@ namespace CoSeph.Core
 
                 result.Clear();
 
-                if (profile.block == BlockHandling.Divert)
+                if (profile._block == BlockHandling.Divert)
                 {
                     // then try to accept a path that is not clear
                     if (resultDirect.Count > 0 && (resultDirect.Count <= distMax || distMax <= 0))
@@ -374,11 +374,11 @@ namespace CoSeph.Core
 
             // don't need to add the target square to the list - we just want to get adjacent! 
             // TODO later on we WILL want to get into the target for objectives/switches/etc but not needed right now
-            if (target.pathPrev)
+            if (target._pathPrev)
             {
-                testPath = target.PathDirFrom(target.pathPrev);
+                testPath = target.PathDirFrom(target._pathPrev);
 
-                if (target == target.pathPrev)
+                if (target == target._pathPrev)
                 {
                     Debug.LogError("BuildPath target == target.pathPrev");
                     return path;
@@ -390,7 +390,7 @@ namespace CoSeph.Core
                     return null;
                 }
                 path.Add(testPath);
-                pathSegment = BuildPath(target.pathPrev);
+                pathSegment = BuildPath(target._pathPrev);
                 if (pathSegment == null)
                 {
                 }
@@ -435,24 +435,24 @@ namespace CoSeph.Core
             List<CSNavNode> targets = new List<CSNavNode>();
             Queue<CSNavNode> frontier = new Queue<CSNavNode>();
             int crapout = 10000;
-            float distMax = profile.max;
+            float distMax = profile._max;
 
-            if (distMax < 0) distMax = pathFindMax;
+            if (distMax < 0) distMax = _pathFindMax;
 
             CleanNavNodes();
 
             frontier.Enqueue(originNode);
             targets.Add(originNode);
-            navNodeDirty.Add(originNode);
+            _navNodeDirty.Add(originNode);
 
             while (frontier.Count > 0 && crapout > 0)
             {
                 CSNavNode currentNode = frontier.Dequeue();
 
-                if (distMax > 0 && currentNode.pathDistance >= distMax)
+                if (distMax > 0 && currentNode._pathDistance >= distMax)
                     continue;
 
-                List<CSNavNode> neighbors = currentNode.nodeConnections;
+                List<CSNavNode> neighbors = currentNode._nodeConnections;
                 foreach (CSNavNode neighbor in neighbors)
                 {
                     float distance;
@@ -462,7 +462,7 @@ namespace CoSeph.Core
                     if (neighbor != originNode)
                     {
                         if (nodeBlocked == BlockType.Block
-                            || (nodeBlocked == BlockType.Pawn && profile.block != BlockHandling.Ignore))
+                            || (nodeBlocked == BlockType.Pawn && profile._block != BlockHandling.Ignore))
                             continue;
                     }
 
@@ -471,38 +471,38 @@ namespace CoSeph.Core
                     // possibly account for treating pawns as temporary blockages here
                     //if (nodeBlocked != BlockType.Clear) continue;
 
-                    navNodeDirty.Add(neighbor);
+                    _navNodeDirty.Add(neighbor);
 
-                    switch (type)
+                    switch (_type)
                     {
                         case NavType.Nav2DOrtho:
                             {
-                                distance = difficulty + currentNode.pathDistance;
+                                distance = difficulty + currentNode._pathDistance;
                                 break;
                             }
                         default:
                         case NavType.Nav2DFree:
                         case NavType.Nav3D:
                             {
-                                distance = (neighbor.NodeDistance(currentNode) * difficulty) + currentNode.pathDistance;
+                                distance = (neighbor.NodeDistance(currentNode) * difficulty) + currentNode._pathDistance;
                                 break;
                             }
                     }
 
                     if (targets.Contains(neighbor))
                     {
-                        if (distance < neighbor.pathDistance)
+                        if (distance < neighbor._pathDistance)
                         {
                             // found a shorter path so re-que it to be checked again
-                            neighbor.pathDistance = distance;
-                            if (neighbor.nodePassable)
+                            neighbor._pathDistance = distance;
+                            if (neighbor.NodePassable)
                                 frontier.Enqueue(neighbor);
                         }
                     }
                     else
                     {
-                        neighbor.pathDistance = distance;
-                        if (neighbor.nodePassable)
+                        neighbor._pathDistance = distance;
+                        if (neighbor.NodePassable)
                             frontier.Enqueue(neighbor);
                         targets.Add(neighbor);
                         crapout = 10000;
@@ -518,14 +518,14 @@ namespace CoSeph.Core
 
         public void AddNodes(List<CSNavNode> nodesNew)
         {
-            navNodeMap.AddRange(nodesNew);
+            _navNodeMap.AddRange(nodesNew);
         }
 
         public void BuildNodeConnections(float maxConnectDist)
         {
-            for (int i = 0; i < navNodeMap.Count; i++)
+            for (int i = 0; i < _navNodeMap.Count; i++)
             {
-                navNodeMap[i].BuildConnections(maxConnectDist);
+                _navNodeMap[i].BuildConnections(maxConnectDist);
             }
         }
 
@@ -556,12 +556,12 @@ namespace CoSeph.Core
             List<CSNavNode> nodeMapTest = PathfindAll(nodeTest, profile);
             //List<CSNavNode> nodeMapTest = PathfindAll(nodeTest, true, 0);
 
-            for (int i = 0; i < navNodeMap.Count; i++)
+            for (int i = 0; i < _navNodeMap.Count; i++)
             {
-                if (!nodeMapTest.Contains(navNodeMap[i]))
+                if (!nodeMapTest.Contains(_navNodeMap[i]))
                 {
                     //Debug.Log("node " + navNodeMap[i] + " was not found in pathfinding test nodemap! widowed node found! " + navNodeMap[i].transform.position);
-                    nodesBroken.Add(navNodeMap[i]);
+                    nodesBroken.Add(_navNodeMap[i]);
                 }
             }
 
@@ -574,7 +574,7 @@ namespace CoSeph.Core
         // destroy the indicated node
         public void DestroyNode(CSNavNode nodeDestroy)
         {
-            navNodeMap.Remove(nodeDestroy);
+            _navNodeMap.Remove(nodeDestroy);
             Destroy(nodeDestroy.gameObject);
         }
     }

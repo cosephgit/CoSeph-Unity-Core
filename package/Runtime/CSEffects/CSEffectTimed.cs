@@ -12,70 +12,70 @@ namespace CoSeph.Core
 {
     public class CSEffectTimed : MonoBehaviour
     {
-        [SerializeField] private SpriteRenderer sprite;
-        [SerializeField] private AnimationCurve spriteFade = AnimationCurve.Linear(0, 1, 1, 0);
-        [SerializeField] private ParticleSystem[] particles; // an array of particle systems
-        [SerializeField] private int particleGroup = 1; // the group size of particles - how many particles should be played at once
-        [SerializeField] private CSEffectTimed[] effects;
+        [SerializeField] private SpriteRenderer _sprite;
+        [SerializeField] private AnimationCurve _spriteFade = AnimationCurve.Linear(0, 1, 1, 0);
+        [SerializeField] private ParticleSystem[] _particles; // an array of particle systems
+        [SerializeField] private int _particleGroup = 1; // the group size of particles - how many particles should be played at once
+        [SerializeField] private CSEffectTimed[] _effects;
         [Header("Floating effects")]
-        [SerializeField] private CSEffectTimed floatingEffectPrefab;
-        [SerializeField] private int floatingCountMin = 3;
-        [SerializeField] private int floatingCountMax = 5;
-        [SerializeField] private float floatingDistance = 1f;
-        [SerializeField] private float floatingRubber = 1f; // how fast to accelerate towards 0
-        [SerializeField] private float floatingSpeed = 1f; // how fast it starts moving
+        [SerializeField] private CSEffectTimed _floatingEffectPrefab;
+        [SerializeField] private int _floatingCountMin = 3;
+        [SerializeField] private int _floatingCountMax = 5;
+        [SerializeField] private float _floatingDistance = 1f;
+        [SerializeField] private float _floatingRubber = 1f; // how fast to accelerate towards 0
+        [SerializeField] private float _floatingSpeed = 1f; // how fast it starts moving
         [Header("Particle positioning")]
-        [SerializeField] private float particleRandomSpread = 0f; // the maximum amount of random repositioning for each particle system
-        [SerializeField] private float particleKickY = 0f;
+        [SerializeField] private float _particleRandomSpread = 0f; // the maximum amount of random repositioning for each particle system
+        [SerializeField] private float _particleKickY = 0f;
         [Header("Particle timing")]
-        [SerializeField] private float particleIncrementDelay = 0f; // the time delay between each particle system being triggered
-        [SerializeField] private float destroyOnDuration;
-        [SerializeField] private bool disableNotDestroy;
-        [SerializeField] private int countDownDelay = 0; // if > 0, this waits for X "turns" before the delay starts (make sure to tell this what a turn is!)
-        [SerializeField] private GameObject countDownObject; // if non-null, this object will be set active as long as the countdown is > 0
-        private Color colorOverride;
-        private int particleGroupIncrement;
-        private Vector3 particleGroupPos;
-        private CSEffectTimed[] floatingEffects = new CSEffectTimed[0];
-        private Vector2[] floatingEffectSpeeds = new Vector2[0];
-        protected int countDown;
+        [SerializeField] private float _particleIncrementDelay = 0f; // the time delay between each particle system being triggered
+        [SerializeField] private float _destroyOnDuration;
+        [SerializeField] private bool _disableNotDestroy;
+        [SerializeField] private int _countDownDelay = 0; // if > 0, this waits for X "turns" before the delay starts (make sure to tell this what a turn is!)
+        [SerializeField] private GameObject _countDownObject; // if non-null, this object will be set active as long as the countdown is > 0
+        private Color _colorOverride;
+        private int _particleGroupIncrement;
+        private Vector3 _particleGroupPos;
+        private CSEffectTimed[] _floatingEffects = new CSEffectTimed[0];
+        private Vector2[] _floatingEffectSpeeds = new Vector2[0];
+        protected int _countDown;
 
         // start the effect sequence
         public void PlayEffect(int timeOverride = -1)
         {
             gameObject.SetActive(true);
             if (timeOverride >= 0)
-                countDown = timeOverride;
+                _countDown = timeOverride;
             else
-                countDown = countDownDelay;
+                _countDown = _countDownDelay;
             //Debug.Log("Playing effect " + name + " at " + transform.position);
-            for (int i = 0; i < effects.Length; i++)
-                effects[i].PlayEffect(timeOverride);
+            for (int i = 0; i < _effects.Length; i++)
+                _effects[i].PlayEffect(timeOverride);
             PlayEffectCustom();
             StartCoroutine(EffectTimer());
-            if (sprite)
+            if (_sprite)
                 StartCoroutine(EffectSprite());
 
-            if (floatingEffectPrefab)
+            if (_floatingEffectPrefab)
             {
-                int count = Random.Range(floatingCountMin, floatingCountMax + 1);
-                floatingEffects = new CSEffectTimed[count];
-                floatingEffectSpeeds = new Vector2[count];
+                int count = Random.Range(_floatingCountMin, _floatingCountMax + 1);
+                _floatingEffects = new CSEffectTimed[count];
+                _floatingEffectSpeeds = new Vector2[count];
                 for (int i = 0; i < count; i++)
                 {
-                    Vector2 offset = CSUtils.RandomVector2D();
-                    Vector2 speed = CSUtils.RandomVector2D() - offset;
-                    floatingEffects[i] = Instantiate(floatingEffectPrefab, transform);
-                    floatingEffects[i].transform.localPosition = offset * floatingDistance;
-                    floatingEffectSpeeds[i] = speed * floatingSpeed;
-                    floatingEffects[i].PlayEffect();
+                    Vector2 offset = CSMath.RandomVector2D();
+                    Vector2 speed = CSMath.RandomVector2D() - offset;
+                    _floatingEffects[i] = Instantiate(_floatingEffectPrefab, transform);
+                    _floatingEffects[i].transform.localPosition = offset * _floatingDistance;
+                    _floatingEffectSpeeds[i] = speed * _floatingSpeed;
+                    _floatingEffects[i].PlayEffect();
                 }
                 StartCoroutine(FloaterTimer());
             }
         }
         public void PlayEffect(Color colorSet)
         {
-            colorOverride = colorSet;
+            _colorOverride = colorSet;
             PlayEffect();
         }
 
@@ -83,16 +83,31 @@ namespace CoSeph.Core
         {
             StopAllCoroutines();
             StopEffectCustom();
-            if (sprite)
-                sprite.enabled = false;
-            for (int i = 0; i < particles.Length; i++)
-                particles[i].Stop();
-            for (int i = 0; i < effects.Length; i++)
-                effects[i].StopEffect();
-            for (int i = 0; i < floatingEffects.Length; i++)
+            if (_sprite)
+                _sprite.enabled = false;
+            for (int i = 0; i < _particles.Length; i++)
             {
-                floatingEffects[i].StopEffect();
-                Destroy(floatingEffects[i].gameObject);
+                if (_particles[i])
+                    _particles[i].Stop();
+                else
+                    Debug.LogWarning("CSEffectTimed _particles index " + i + " is null");
+            }
+            for (int i = 0; i < _effects.Length; i++)
+            {
+                if (_effects[i])
+                    _effects[i].StopEffect();
+                else
+                    Debug.LogWarning("CSEffectTimed _effects index " + i + " is null");
+            }
+            for (int i = 0; i < _floatingEffects.Length; i++)
+            {
+                if (_floatingEffects[i])
+                {
+                    _floatingEffects[i].StopEffect();
+                    Destroy(_floatingEffects[i].gameObject);
+                }
+                else
+                    Debug.LogWarning("CSEffectTimed _floatingEffects index " + i + " is null");
             }
             gameObject.SetActive(false);
         }
@@ -103,16 +118,16 @@ namespace CoSeph.Core
 
         public bool TurnEnd()
         {
-            countDown--;
-            return (countDown <= 0);
+            _countDown--;
+            return (_countDown <= 0);
         }
         public virtual void PlayEffectCustom() { }
 
         // this is for orienting the effect relative to an origin
         public void PlayEffectDirected(Vector3 direction)
         {
-            if (particleKickY > 0)
-                direction.y += particleKickY; // shift the direction up slightly to make the particles bounce up off the floor
+            if (_particleKickY > 0)
+                direction.y += _particleKickY; // shift the direction up slightly to make the particles bounce up off the floor
 
             transform.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(-direction.x, direction.y) * Mathf.Rad2Deg);
 
@@ -120,7 +135,7 @@ namespace CoSeph.Core
         }
         public void PlayEffectDirected(Vector3 direction, Color colorSet)
         {
-            colorOverride = colorSet;
+            _colorOverride = colorSet;
             PlayEffectDirected(direction);
         }
         public void PlayEffectOriented(Vector3 origin)
@@ -131,7 +146,7 @@ namespace CoSeph.Core
         }
         public void PlayEffectOriented(Vector3 origin, Color colorSet)
         {
-            colorOverride = colorSet;
+            _colorOverride = colorSet;
             PlayEffectOriented(origin);
         }
 
@@ -139,52 +154,57 @@ namespace CoSeph.Core
         // plays particle sysems
         private IEnumerator EffectTimer()
         {
-            particleGroupIncrement = 0;
+            _particleGroupIncrement = 0;
 
-            if (countDown > 0 && countDownObject) countDownObject.SetActive(true);
+            if (_countDown > 0 && _countDownObject) _countDownObject.SetActive(true);
 
-            for (int i = 0; i < particles.Length; i++)
+            for (int i = 0; i < _particles.Length; i++)
             {
-                if (particleRandomSpread > 0)
+                if (_particles[i])
                 {
-                    if (particleGroupIncrement == 0)
-                        particleGroupPos = new Vector3(Random.Range(-particleRandomSpread, particleRandomSpread), Random.Range(-particleRandomSpread, particleRandomSpread));
-
-                    particles[i].transform.localPosition = particleGroupPos;
-                }
-
-                if (colorOverride.a > 0)
-                {
-                    Color colorOverrideDark = Color.Lerp(colorOverride, Color.black, 0.5f);
-                    ParticleSystem.MainModule particleMain = particles[i].main;
-                    //particleMain.startColor = colorOverride;
-                    particleMain.startColor = new ParticleSystem.MinMaxGradient(colorOverride, colorOverrideDark);
-                }
-                particles[i].Play();
-                //Debug.Log("particle effect " + i + " playing");
-
-                if (particleGroup > 1)
-                {
-                    // with particle groups, only pause between groups
-                    particleGroupIncrement++;
-                    if (particleGroupIncrement == particleGroup && particleIncrementDelay > 0)
+                    if (_particleRandomSpread > 0)
                     {
-                        particleGroupIncrement = 0;
-                        yield return new WaitForSeconds(particleIncrementDelay);
+                        if (_particleGroupIncrement == 0)
+                            _particleGroupPos = new Vector3(Random.Range(-_particleRandomSpread, _particleRandomSpread), Random.Range(-_particleRandomSpread, _particleRandomSpread));
+
+                        _particles[i].transform.localPosition = _particleGroupPos;
                     }
+
+                    if (_colorOverride.a > 0)
+                    {
+                        Color colorOverrideDark = Color.Lerp(_colorOverride, Color.black, 0.5f);
+                        ParticleSystem.MainModule particleMain = _particles[i].main;
+                        //particleMain.startColor = colorOverride;
+                        particleMain.startColor = new ParticleSystem.MinMaxGradient(_colorOverride, colorOverrideDark);
+                    }
+                    _particles[i].Play();
+                    //Debug.Log("particle effect " + i + " playing");
+
+                    if (_particleGroup > 1)
+                    {
+                        // with particle groups, only pause between groups
+                        _particleGroupIncrement++;
+                        if (_particleGroupIncrement == _particleGroup && _particleIncrementDelay > 0)
+                        {
+                            _particleGroupIncrement = 0;
+                            yield return new WaitForSeconds(_particleIncrementDelay);
+                        }
+                    }
+                    else if (_particleIncrementDelay > 0)
+                        yield return new WaitForSeconds(_particleIncrementDelay);
                 }
-                else if (particleIncrementDelay > 0)
-                    yield return new WaitForSeconds(particleIncrementDelay);
+                else
+                    Debug.LogWarning("CSEffectTimed _particles " + i + " is null");
             }
-            while (countDown > 0)
+            while (_countDown > 0)
                 yield return new WaitForEndOfFrame();
 
-            if (countDownObject) countDownObject.SetActive(false);
+            if (_countDownObject) _countDownObject.SetActive(false);
 
-            if (destroyOnDuration > 0)
+            if (_destroyOnDuration > 0)
             {
-                yield return new WaitForSeconds(destroyOnDuration);
-                if (disableNotDestroy)
+                yield return new WaitForSeconds(_destroyOnDuration);
+                if (_disableNotDestroy)
                     StopEffect();
                 else
                     Destroy(gameObject);
@@ -196,49 +216,57 @@ namespace CoSeph.Core
             float duration = 0f;
             bool eternal;
 
-            if (destroyOnDuration > 0)
-                duration = destroyOnDuration;
-            if (particleIncrementDelay > 0)
-                duration += particleIncrementDelay * particles.Length; // add the particle time to have them end at once
+            if (_destroyOnDuration > 0)
+                duration = _destroyOnDuration;
+            if (_particleIncrementDelay > 0)
+                duration += _particleIncrementDelay * _particles.Length; // add the particle time to have them end at once
 
-            eternal = (destroyOnDuration <= 0);
+            eternal = (_destroyOnDuration <= 0);
 
             while (eternal || duration > 0)
             {
-                for (int i = 0; i < floatingEffects.Length; i++)
+                for (int i = 0; i < _floatingEffects.Length; i++)
                 {
-                    Vector2 pos = floatingEffects[i].transform.localPosition;
-                    floatingEffectSpeeds[i] -= pos.normalized * floatingRubber * Time.deltaTime;
-                    pos += floatingEffectSpeeds[i] * Time.deltaTime;
-                    floatingEffects[i].transform.localPosition = pos;
+                    if (_floatingEffects[i])
+                    {
+                        Vector2 pos = _floatingEffects[i].transform.localPosition;
+                        _floatingEffectSpeeds[i] -= pos.normalized * _floatingRubber * Time.deltaTime;
+                        pos += _floatingEffectSpeeds[i] * Time.deltaTime;
+                        _floatingEffects[i].transform.localPosition = pos;
+                    }
+                    else
+                        Debug.LogWarning("CSEffectTimed _floatingEffects " + i + " is null");
                 }
                 yield return new WaitForEndOfFrame();
-                if (countDown <= 0)
+                if (_countDown <= 0)
                     duration -= Time.deltaTime;
             }
-            for (int i = 0; i < floatingEffects.Length; i++)
-                Destroy(floatingEffects[i]);
+            for (int i = 0; i < _floatingEffects.Length; i++)
+                Destroy(_floatingEffects[i]);
         }
 
         // fade out the sprite
         private IEnumerator EffectSprite()
         {
+            if (!_sprite)
+                yield break;
+
             float timeSpent = 0;
-            Color colorUpdate = sprite.color;
+            Color colorUpdate = _sprite.color;
 
-            sprite.enabled = true;
+            _sprite.enabled = true;
 
-            while (countDown > 0)
+            while (_countDown > 0)
                 yield return new WaitForEndOfFrame();
 
-            while (timeSpent < spriteFade.length)
+            while (timeSpent < _spriteFade.length)
             {
-                colorUpdate.a = spriteFade.Evaluate(timeSpent);
-                sprite.color = colorUpdate;
+                colorUpdate.a = _spriteFade.Evaluate(timeSpent);
+                _sprite.color = colorUpdate;
                 timeSpent += Time.deltaTime;
                 yield return new WaitForEndOfFrame();
             }
-            sprite.enabled = false;
+            _sprite.enabled = false;
         }
     }
 }

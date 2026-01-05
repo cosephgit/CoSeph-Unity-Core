@@ -12,34 +12,34 @@ namespace CoSeph.Core
 {
     public class CSNavProfile
     {
-        public NavArb arb = NavArb.Simple; // how to arbitrate between points of tied value
-        public BlockHandling block = BlockHandling.Avoid; // how to treat blockages
-        public float max = -1; // the maximum path distance
-        public float divertMultOverride = -1; // multiplier to maximum divert distance that will be considered (if choosing a longer diversion around a blockage)
-        private int layersAvoid = -1;
+        public NavArb _arb = NavArb.Simple; // how to arbitrate between points of tied value
+        public BlockHandling _block = BlockHandling.Avoid; // how to treat blockages
+        public float _max = -1; // the maximum path distance
+        public float _divertMultOverride = -1; // multiplier to maximum divert distance that will be considered (if choosing a longer diversion around a blockage)
+        private int _layersAvoid = -1;
 
         public CSNavProfile(NavArb arb, BlockHandling block, float max, float divertMultOverride, int layersAvoid = -1)
         {
-            this.arb = arb;
-            this.block = block;
-            this.max = max;
-            this.divertMultOverride = divertMultOverride;
-            this.layersAvoid = layersAvoid;
+            _arb = arb;
+            _block = block;
+            _max = max;
+            _divertMultOverride = divertMultOverride;
+            _layersAvoid = layersAvoid;
         }
 
         // check if the provided node is passable at all
         public BlockType CheckBlocked(Vector3 point, bool tryMove)
         {
-            CSNavNode pointNode = CSNavigate.instance.GetNode(point);
+            CSNavNode pointNode = CSNavigate.Instance.GetNode(point);
             if (pointNode)
-                return CheckBlocked(CSNavigate.instance.GetNode(point), tryMove);
+                return CheckBlocked(CSNavigate.Instance.GetNode(point), tryMove);
             return BlockType.Block;
         }
         public virtual BlockType CheckBlocked(CSNavNode node, bool tryMove)
         {
-            if (layersAvoid > 0)
+            if (_layersAvoid > 0)
             {
-                Collider2D blocked = Physics2D.OverlapPoint(node.transform.position, layersAvoid);
+                Collider2D blocked = Physics2D.OverlapPoint(node.transform.position, _layersAvoid);
                 if (blocked)
                     return BlockType.Block;
             }

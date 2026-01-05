@@ -6,13 +6,13 @@ namespace CoSeph.Core
 {
     public class BaseState
     {
-        public string name;
-        protected StateMachine stateMachine;
+        public string _name;
+        protected StateMachine _stateMachine;
 
         public BaseState(string name, StateMachine stateMachine)
         {
-            this.name = name;
-            this.stateMachine = stateMachine;
+            _name = name;
+            _stateMachine = stateMachine;
         }
 
         public virtual void Enter()

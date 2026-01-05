@@ -24,27 +24,29 @@ namespace CoSeph.Core
     public class CSNavNode : MonoBehaviour
     {
         // nodes to navigate to adjacent nodes
-        public List<CSNavNode> nodeConnections { get; private set; }
-        public CSNavNode pathPrev { get; private set; }
+        public List<CSNavNode> _nodeConnections { get; private set; }
+        public CSNavNode _pathPrev { get; private set; }
 
         // pathfinding data
-        private NodeStatus status;
+        private NodeStatus _status;
         // used for A*
-        private float pathFCost = 0; // total
-        private float pathGCost = 0; // path so far
-        private float pathHCost = 0; // estimated path left REMEMBER THIS MUST BE THE SHORTEST POSSIBLE DISTANCE EVER
-        public bool nodePassable { get; private set; } = true; // if false this node is a destination only and can't be pathed through
-        public float pathDistance = 0; // used for Djikstra
+        private float _pathFCost = 0; // total
+        private float _pathGCost = 0; // path so far
+        private float _pathHCost = 0; // estimated path left REMEMBER THIS MUST BE THE SHORTEST POSSIBLE DISTANCE EVER
+        private bool _nodePassable = true; // if false this node is a destination only and can't be pathed through
+        public float _pathDistance = 0; // used for Djikstra
 
-        public float nodeValue; // general-purpose node evaluation variable can be used for anything e.g. sorting nodes or prioritising routes
+        public float _nodeValue; // general-purpose node evaluation variable can be used for anything e.g. sorting nodes or prioritising routes
+
+        public bool NodePassable { get => _nodePassable; }
 
         // this is called after all CSNavNodes are placed to calculate node adjacency
         // index is just used to name the node for easier identification
         public void Initialise(string key, int index, bool nodePassableSet = true)
         {
             name = key + index;
-            nodePassable = nodePassableSet;
-            nodeConnections = new List<CSNavNode>();
+            _nodePassable = nodePassableSet;
+            _nodeConnections = new List<CSNavNode>();
 
             PathClear();
         }
@@ -52,33 +54,33 @@ namespace CoSeph.Core
         // maxConnection is the maximum radius for any connected nodes
         public void BuildConnections(float maxConnectDist)
         {
-            nodeConnections.Clear();
+            _nodeConnections.Clear();
 
-            switch (CSNavigate.instance.type)
+            switch (CSNavigate.Navigation)
             {
                 default:
                 case NavType.Nav2DFree:
                 case NavType.Nav2DOrtho: // should we validate nodes for ortho movement or just assume they'll only be in connect dist if they're valid?
                     {
-                        Collider2D[] nodesAdjacent = Physics2D.OverlapCircleAll(transform.position, maxConnectDist, CSNavigate.instance.LayerNav());
+                        Collider2D[] nodesAdjacent = Physics2D.OverlapCircleAll(transform.position, maxConnectDist, CSNavigate.Instance.LayerNav());
 
                         foreach (Collider2D node in nodesAdjacent)
                         {
                             CSNavNode navNode = node.GetComponent<CSNavNode>();
                             if (navNode && navNode != this)
-                                nodeConnections.Add(navNode);
+                                _nodeConnections.Add(navNode);
                         }
                         break;
                     }
                 case NavType.Nav3D:
                     {
-                        Collider[] nodesAdjacent = Physics.OverlapSphere(transform.position, maxConnectDist, CSNavigate.instance.LayerNav());
+                        Collider[] nodesAdjacent = Physics.OverlapSphere(transform.position, maxConnectDist, CSNavigate.Instance.LayerNav());
 
                         foreach (Collider node in nodesAdjacent)
                         {
                             CSNavNode navNode = node.GetComponent<CSNavNode>();
                             if (navNode && navNode != this)
-                                nodeConnections.Add(navNode);
+                                _nodeConnections.Add(navNode);
                         }
                         break;
                     }
@@ -92,51 +94,51 @@ namespace CoSeph.Core
             CSNavNode optimalNode = null;
 
             // initialise all uninitialised adjacent nodes
-            for (int i = 0; i < nodeConnections.Count; i++)
+            for (int i = 0; i < _nodeConnections.Count; i++)
             {
-                nodeConnections[i].PathNodeSet(target, this, pathGCost, pawnValue, profile);
+                _nodeConnections[i].PathNodeSet(target, this, _pathGCost, pawnValue, profile);
             }
 
             if (previous == null)
             {// this is the first node in the search
-                status = NodeStatus.Start;
+                _status = NodeStatus.Start;
             }
             else
             {
-                status = NodeStatus.Calculated;
+                _status = NodeStatus.Calculated;
             }
 
             // add this node to the dirty node list so it can be cleaned later
-            CSNavigate.instance.navNodeDirty.Add(this);
+            CSNavigate.Instance._navNodeDirty.Add(this);
 
             float optimalDist = Mathf.Infinity;
             float optimalHDist = Mathf.Infinity;
-            foreach (CSNavNode node in CSNavigate.instance.navNodeMap)
+            foreach (CSNavNode node in CSNavigate.Instance._navNodeMap)
             {
-                if (node.status == NodeStatus.Initial)
+                if (node._status == NodeStatus.Initial)
                 {
-                    if (node.pathFCost < optimalDist)
+                    if (node._pathFCost < optimalDist)
                     {
                         optimalNode = node;
-                        optimalDist = node.pathFCost;
-                        optimalHDist = node.pathHCost;
+                        optimalDist = node._pathFCost;
+                        optimalHDist = node._pathHCost;
                     }
-                    else if (node.pathFCost == optimalDist)
+                    else if (node._pathFCost == optimalDist)
                     {
                         bool update = false;
 
-                        if (node.pathHCost < optimalHDist)
+                        if (node._pathHCost < optimalHDist)
                             update = true;
-                        else if (node.pathHCost == optimalHDist)
+                        else if (node._pathHCost == optimalHDist)
                         {
-                            switch (profile.arb)
+                            switch (profile._arb)
                             {
                                 default:
                                 case NavArb.Simple:
                                     update = false;
                                     break;
                                 case NavArb.Random:
-                                    update = CSUtils.RandomBool();
+                                    update = CSMath.RandomBool();
                                     break;
                                 case NavArb.Direct:
                                     Vector3 offset = target.transform.position - node.transform.position;
@@ -144,7 +146,7 @@ namespace CoSeph.Core
 
                                     if (Mathf.Abs(offsetCurrent.x) > Mathf.Abs(offsetCurrent.y))
                                     {
-                                        if (CSNavigate.instance.type == NavType.Nav3D)
+                                        if (CSNavigate.Navigation == NavType.Nav3D)
                                         {
                                             if (Mathf.Abs(offsetCurrent.x) > Mathf.Abs(offsetCurrent.z))
                                                 update = (Mathf.Abs(offset.x) < Mathf.Abs(offsetCurrent.x));
@@ -156,7 +158,7 @@ namespace CoSeph.Core
                                     }
                                     else
                                     {
-                                        if (CSNavigate.instance.type == NavType.Nav3D)
+                                        if (CSNavigate.Navigation == NavType.Nav3D)
                                         {
                                             if (Mathf.Abs(offsetCurrent.y) > Mathf.Abs(offsetCurrent.z))
                                                 update = (Mathf.Abs(offset.y) < Mathf.Abs(offsetCurrent.y));
@@ -173,8 +175,8 @@ namespace CoSeph.Core
                         if (update)
                         {
                             optimalNode = node;
-                            optimalDist = node.pathFCost;
-                            optimalHDist = node.pathHCost;
+                            optimalDist = node._pathFCost;
+                            optimalHDist = node._pathHCost;
                         }
                     }
                 }
@@ -202,17 +204,17 @@ namespace CoSeph.Core
             BlockType obstacle = BlockType.Clear;
             float difficulty = 1f;
             // only set it up if it's not been set up already
-            if (status == NodeStatus.Clean)
+            if (_status == NodeStatus.Clean)
             {
                 // add to dirty node list
-                CSNavigate.instance.navNodeDirty.Add(this);
+                CSNavigate.Instance._navNodeDirty.Add(this);
 
                 // only need to check for obstacles when this node isn't the destination
                 if (target != this)
                 {
-                    if (!nodePassable)
+                    if (!_nodePassable)
                     {
-                        status = NodeStatus.Calculated;
+                        _status = NodeStatus.Calculated;
                         return;
                     }
 
@@ -223,7 +225,7 @@ namespace CoSeph.Core
                     if ((obstacle == BlockType.Pawn && pawnValue <= 0)
                         || obstacle == BlockType.Block)
                     {
-                        status = NodeStatus.Calculated; // blocked, don't consider this node for pathfinding
+                        _status = NodeStatus.Calculated; // blocked, don't consider this node for pathfinding
                         return;
                     }
                     else
@@ -236,23 +238,23 @@ namespace CoSeph.Core
                 if (obstacle == BlockType.Pawn) // pawnvalue is necessarily > 0 to get here
                 {
                     // so allow pathing through pawns, but adjust the space value
-                    pathGCost = currentG + NodeDistance(previous) * pawnValue * difficulty;
+                    _pathGCost = currentG + NodeDistance(previous) * pawnValue * difficulty;
                     //pathHCost = NodeDistance(target) * pawnValue;
-                    pathHCost = NodeDistance(target);
+                    _pathHCost = NodeDistance(target);
                 }
                 else
                 {
-                    pathGCost = currentG + NodeDistance(previous) * difficulty;
-                    pathHCost = NodeDistance(target);
+                    _pathGCost = currentG + NodeDistance(previous) * difficulty;
+                    _pathHCost = NodeDistance(target);
                 }
-                pathFCost = pathGCost + pathHCost;
-                if (profile.max > 0 && pathFCost > profile.max)
+                _pathFCost = _pathGCost + _pathHCost;
+                if (profile._max > 0 && _pathFCost > profile._max)
                 {
-                    status = NodeStatus.Calculated; // too far, don't consider this node for pathfinding
+                    _status = NodeStatus.Calculated; // too far, don't consider this node for pathfinding
                     return;
                 }
-                status = NodeStatus.Initial; // this node has been initialised
-                pathPrev = previous;
+                _status = NodeStatus.Initial; // this node has been initialised
+                _pathPrev = previous;
             }
         }
 
@@ -260,13 +262,13 @@ namespace CoSeph.Core
         // this needs to be done before all pathfinding checks
         public void PathClear()
         {
-            status = NodeStatus.Clean;
-            pathGCost = 0;
-            pathHCost = 0;
-            pathFCost = 0;
-            pathDistance = 0;
-            pathPrev = null;
-            nodeValue = 0f;
+            _status = NodeStatus.Clean;
+            _pathGCost = 0;
+            _pathHCost = 0;
+            _pathFCost = 0;
+            _pathDistance = 0;
+            _pathPrev = null;
+            _nodeValue = 0f;
         }
 
         // calculates the distance from this node to the target point (includes using for H distance)
@@ -277,13 +279,13 @@ namespace CoSeph.Core
         }
         public float NodeDistance(Vector3 target)
         {
-            switch (CSNavigate.instance.type)
+            switch (CSNavigate.Navigation)
             {
                 default:
                 case NavType.Nav3D:
                     return (transform.position - target).magnitude;
                 case NavType.Nav2DOrtho:
-                    return CSUtils.OrthogonalDist(transform.position, target);
+                    return CSMath.OrthogonalDist(transform.position, target, true);
                 case NavType.Nav2DFree:
                     return ((Vector2)(transform.position - target)).magnitude;
             }
@@ -293,7 +295,7 @@ namespace CoSeph.Core
         // TODO probably rework this to do more, or at least rename it
         public CSNavNode PathDirFrom(CSNavNode origin)
         {
-            if (origin.nodeConnections.Contains(this)) return this;
+            if (origin._nodeConnections.Contains(this)) return this;
 
             return null;
         }

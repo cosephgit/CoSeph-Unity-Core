@@ -11,7 +11,7 @@ namespace CoSeph.Core
 {
     public class StateMachine : MonoBehaviour
     {
-        protected BaseState currentState;
+        protected BaseState _currentState;
 
         protected virtual void Start()
         {
@@ -20,36 +20,36 @@ namespace CoSeph.Core
 
         public void Initialise()
         {
-            if (currentState != null)
-                currentState.Exit();
-            currentState = GetInitialState();
-            if (currentState != null)
-                currentState.Enter();
+            if (_currentState != null)
+                _currentState.Exit();
+            _currentState = GetInitialState();
+            if (_currentState != null)
+                _currentState.Enter();
         }
 
         public void Disable()
         {
-            if (currentState != null)
-                currentState.Exit();
-            currentState = GetDisabledState();
-            if (currentState != null)
-                currentState.Enter();
+            if (_currentState != null)
+                _currentState.Exit();
+            _currentState = GetDisabledState();
+            if (_currentState != null)
+                _currentState.Enter();
         }
 
         protected virtual void Update()
         {
-            if (currentState != null)
+            if (_currentState != null)
             {
-                currentState.UpdateLogic();
+                _currentState.UpdateLogic();
             }
         }
 
         public void ChangeState(BaseState newState)
         {
-            currentState.Exit();
+            _currentState.Exit();
 
-            currentState = newState;
-            currentState.Enter();
+            _currentState = newState;
+            _currentState.Enter();
         }
 
         protected virtual BaseState GetInitialState()
