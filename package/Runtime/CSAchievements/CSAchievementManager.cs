@@ -1,31 +1,47 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// CSAchievements
-// Stores unlocked achievements and unlocks
-// Has integrations for platform-specific achievement integration
-// created 27/5/25
-// modified 27/5/25
-
 namespace CoSeph.Core
 {
-    public class SaveAchievement
+    /// <summary>
+    /// Serializable data container for persisting achievement progress.
+    /// Contains no logic and references achievements by UniqueID only.
+    /// </summary>
+    public class AchievementSaveData
     {
-        public string _id;
-        public float _value;
+        public string UniqueID;
+        public float Value;
     }
 
+    /// <summary>
+    /// Central runtime authority for achievement progress.
+    /// 
+    /// Responsibilities:
+    /// - Owns runtime progress state (by UniqueID)
+    /// - Maps saved data to immutable achievement definitions
+    /// - Emits progress change events for platform integrations
+    /// - Caches all achievement data for quick access
+    /// 
+    /// This manager persists across scenes and must exist exactly once.
+    /// </summary>
 
     public class CSAchievementManager : MonoBehaviour
     {
+        // Singleton instance. Exactly one must exist at runtime.
         protected static CSAchievementManager _instance;
-        private Dictionary<CSAchievement, float> _achievementsGot;
-        private CSAchievement[] _achievementsCache;
-        // for platform-specific achievement integration
+        // Lookup of achievement definitions by UniqueID.
+        // Built once at startup to avoid repeated linear searches.
+        private Dictionary<string, CSAchievement> _achievementsCache;
+        /// <summary>
+        /// Fired whenever achievement progress changes.
+        /// Intended for platform-specific or external integrations.
+        /// </summary>
         public delegate void AchievementSet(CSAchievement achievement, float value);
-        public static event AchievementSet _achievementSet = delegate { };
+        public static event AchievementSet AchievementProgressChanged = delegate { };
+        // actual achievement progress
+        private Dictionary<string, float> _achievementsGot;
 
+        // Enforces singleton instance and initializes persistent state.
         private void Awake()
         {
             if (_instance)
@@ -43,21 +59,25 @@ namespace CoSeph.Core
             }
         }
 
+        /// <summary>
+        /// Performs one-time initialization:
+        /// - Marks the manager as persistent
+        /// - Builds fast lookup tables for achievements
+        /// - Validates UniqueID uniqueness
+        /// </summary>
         private void InitialiseInstance()
         {
             DontDestroyOnLoad(gameObject);
-            _achievementsGot = new Dictionary<CSAchievement, float>();
-            _achievementsCache = Resources.FindObjectsOfTypeAll<CSAchievement>();
+            _achievementsGot = new Dictionary<string, float>();
+            CSAchievement[] allAchievements = Resources.FindObjectsOfTypeAll<CSAchievement>();
 
-            for (int i = 0; i < _achievementsCache.Length - 1; i++)
+            _achievementsCache = new Dictionary<string, CSAchievement>();
+
+            for (int i = 0; i < allAchievements.Length; i++)
             {
-                for (int j = 1; j < _achievementsCache.Length; j++)
+                if (!_achievementsCache.TryAdd(allAchievements[i].UniqueID, allAchievements[i]))
                 {
-                    if (i != j)
-                    {
-                        if (_achievementsCache[i].unique == _achievementsCache[j].unique)
-                            Debug.LogError("Found duplicate CSAchivement unique " + _achievementsCache[j].unique);
-                    }
+                    Debug.LogError($"Found duplicate CSAchivement uniqueID {allAchievements[i].UniqueID}");
                 }
             }
         }
@@ -67,94 +87,118 @@ namespace CoSeph.Core
             get
             {
                 if (_instance == null)
-                {
-                    return new GameObject("AchievementManager").AddComponent<CSAchievementManager>();
-                }
-                else
-                {
-                    return _instance;
-                }
+                    Debug.LogError("CSAchievementManager not found. Ensure one exists.");
+
+                return _instance;
             }
         }
 
-        public Dictionary<CSAchievement, float> AchievementsGot()
+        /// <summary>
+        /// Returns a snapshot of all achievement progress suitable for saving.
+        /// Returned data is a copy and safe to modify by the caller.
+        /// </summary>
+        public List<AchievementSaveData> GetAllProgress()
         {
-            return new Dictionary<CSAchievement, float>(_achievementsGot);
-        }
+            var list = new List<AchievementSaveData>();
 
-        public CSAchievement GetAchievementByName(string nameFind)
-        {
-            for (int i = 0; i < _achievementsCache.Length; i++)
+            foreach (var kvp in _achievementsGot)
             {
-                if (_achievementsCache[i].unique == nameFind)
-                    return _achievementsCache[i];
+                list.Add(new AchievementSaveData
+                {
+                    UniqueID = kvp.Key,
+                    Value = kvp.Value
+                });
             }
+
+            return list;
+        }
+
+        /// <summary>
+        /// Resolves an achievement definition by UniqueID.
+        /// Returns null if no matching definition exists.
+        /// </summary>
+        public CSAchievement GetAchievementByUnique(string uniqueGet)
+        {
+            if (_achievementsCache.TryGetValue(uniqueGet, out CSAchievement achievement))
+            {
+                return achievement;
+            }
+
+            Debug.LogError($"GetAchievementByUnique invalid uniqueGet {uniqueGet}");
             return null;
         }
 
-        // add an amount to the progress on the achievement
+        /// <summary>
+        /// Adds progress to an achievement, clamped to its maximum.
+        /// Emits a progress-changed event if successful.
+        /// </summary>
         public void AchievementProgressAdd(CSAchievement achievement, float progress)
         {
-            if (_achievementsGot.ContainsKey(achievement))
+            if (_achievementsGot.ContainsKey(achievement.UniqueID))
             {
-                _achievementsGot[achievement] += progress;
+                _achievementsGot[achievement.UniqueID] = Mathf.Clamp(_achievementsGot[achievement.UniqueID] + progress, 0f, achievement.Max);
             }
             else
             {
-                _achievementsGot.Add(achievement, progress);
+                _achievementsGot.Add(achievement.UniqueID, progress);
             }
-            //Debug.Log("Achievement " + achievement.unique + " progress is " + achievementsGot[achievement]);
+            //Debug.Log("Achievement " + achievement.UniqueID + " progress is " + _achievementsGot[achievement.UniqueID]);
 
             // set the achievement to the platform
-            _achievementSet(achievement, _achievementsGot[achievement]);
+            AchievementProgressChanged(achievement, _achievementsGot[achievement.UniqueID]);
         }
 
-        // set the achievement to the new value
-        // if increaseOnly, it will only increase the achievement progress to this value not reduce it
+        /// <summary>
+        /// Sets achievement progress to a specific value.
+        /// If increaseOnly is true, progress will never be reduced.
+        /// Emits a progress-changed event if the value changes.
+        /// </summary>
         public void AchievementProgressSet(CSAchievement achievement, float progress, bool increaseOnly)
         {
             if (achievement == null)
             {
-                Debug.Log("AchievementProgressSet called with null achievement");
+                Debug.LogError("AchievementProgressSet called with null achievement");
                 return;
             }
-            if (_achievementsGot.ContainsKey(achievement))
+            float newValue = Mathf.Clamp(progress, 0f, achievement.Max);
+            if (_achievementsGot.ContainsKey(achievement.UniqueID))
             {
-                if (increaseOnly)
-                {
-                    if (_achievementsGot[achievement] < progress)
-                        _achievementsGot[achievement] = progress;
-                }
-                else
-                    _achievementsGot[achievement] = progress;
+                if (increaseOnly && _achievementsGot[achievement.UniqueID] >= newValue)
+                    return;
+                _achievementsGot[achievement.UniqueID] = newValue;
             }
             else
             {
-                _achievementsGot.Add(achievement, progress);
+                _achievementsGot.Add(achievement.UniqueID, newValue);
             }
             //Debug.Log("Achievement " + achievement.unique + " progress is " + achievementsGot[achievement]);
 
             // set the achievement to the platform
-            _achievementSet(achievement, _achievementsGot[achievement]);
+            AchievementProgressChanged(achievement, _achievementsGot[achievement.UniqueID]);
         }
 
-        public void AchievementInitialise(List<SaveAchievement> savedAchievements)
+        /// <summary>
+        /// Applies previously saved achievement progress.
+        /// Intended to be called once during load/bootstrap.
+        /// </summary>
+        public void AchievementInitialise(List<AchievementSaveData> savedAchievements)
         {
             for (int i = 0; i < savedAchievements.Count; i++)
             {
-                CSAchievement achievement = GetAchievementByName(savedAchievements[i]._id);
+                CSAchievement achievement = GetAchievementByUnique(savedAchievements[i].UniqueID);
                 if (achievement)
-                    AchievementProgressSet(achievement, savedAchievements[i]._value, true);
-                else
-                    Debug.LogError("<color=green>Achievement</color> can't find achievement with saved id " + savedAchievements[i]._id);
+                    AchievementProgressSet(achievement, savedAchievements[i].Value, true);
             }
         }
 
+        /// <summary>
+        /// Returns true if the achievement has reached or exceeded its maximum value.
+        /// </summary>
         public bool IsAchievementComplete(CSAchievement achievement)
         {
-            if (_achievementsGot.ContainsKey(achievement))
+            if (_achievementsGot.ContainsKey(achievement.UniqueID))
             {
-                return (_achievementsGot[achievement] >= achievement.max);
+                return (_achievementsGot[achievement.UniqueID] >= achievement.Max);
             }
             return false;
         }
