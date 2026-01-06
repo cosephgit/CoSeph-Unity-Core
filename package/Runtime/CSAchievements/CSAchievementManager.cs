@@ -55,8 +55,8 @@ namespace CoSeph.Core
                 {
                     if (i != j)
                     {
-                        if (_achievementsCache[i]._unique == _achievementsCache[j]._unique)
-                            Debug.LogError("Found duplicate CSAchivement unique " + _achievementsCache[j]._unique);
+                        if (_achievementsCache[i].unique == _achievementsCache[j].unique)
+                            Debug.LogError("Found duplicate CSAchivement unique " + _achievementsCache[j].unique);
                     }
                 }
             }
@@ -86,7 +86,7 @@ namespace CoSeph.Core
         {
             for (int i = 0; i < _achievementsCache.Length; i++)
             {
-                if (_achievementsCache[i]._unique == nameFind)
+                if (_achievementsCache[i].unique == nameFind)
                     return _achievementsCache[i];
             }
             return null;
@@ -154,7 +154,7 @@ namespace CoSeph.Core
         {
             if (_achievementsGot.ContainsKey(achievement))
             {
-                return (_achievementsGot[achievement] >= achievement._max);
+                return (_achievementsGot[achievement] >= achievement.max);
             }
             return false;
         }

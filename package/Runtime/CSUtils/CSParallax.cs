@@ -13,9 +13,9 @@ namespace CoSeph.Core
     [System.Serializable]
     public class CSParallaxLayer
     {
-        public Transform _layer;
-        public float _distance;
-        [HideInInspector]public float _scale;
+        public Transform layer;
+        public float distance;
+        [HideInInspector]public float scale;
     }
 
     public class CSParallax : MonoBehaviour
@@ -37,9 +37,9 @@ namespace CoSeph.Core
             for (int i = 0; i < _layerCount; i++)
             {
                 float dist = 1f;
-                if (_layers[i]._distance > i) dist = _layers[i]._distance;
+                if (_layers[i].distance > i) dist = _layers[i].distance;
 
-                _layers[i]._scale = 1f - (1f / dist);
+                _layers[i].scale = 1f - (1f / dist);
             }
         }
 
@@ -55,7 +55,7 @@ namespace CoSeph.Core
 
                     for (int i = 0; i < _layerCount; i++)
                     {
-                        _layers[i]._layer.position = _posOld * _layers[i]._scale;
+                        _layers[i].layer.position = _posOld * _layers[i].scale;
                     }
                 }
             }
