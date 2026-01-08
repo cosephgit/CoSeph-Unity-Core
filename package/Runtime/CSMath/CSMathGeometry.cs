@@ -3,8 +3,6 @@ using UnityEngine;
 
 namespace CoSeph.Core
 {
-    // Note: If multiple rectangles tie for the selected preference,
-    // the first encountered rectangle is chosen.
     public enum RectSelectionPreference
     {
         Widest,
@@ -12,28 +10,39 @@ namespace CoSeph.Core
         Largest // most internal area
     }
 
+    /// <summary>
+    /// Collection of geometry and grid-based utility functions used for
+    /// spatial reasoning, distance calculations, and maximal rectangle
+    /// detection on discrete grids.
+    /// </summary>
     public static class CSMathGeometry 
     {
-        // ---------------------
-        // GEOMETRY
-        // ---------------------
-        // calculates the Manhattan (orthogonal) distance between points
+        /// <summary>
+        /// calculates the Manhattan (orthogonal) distance between points
+        /// </summary>
+        /// <param name="twodee">if true, ignore Z component</param>
         public static int ManhattanDist(Vector3 a, Vector3 b, bool twodee)
         {
             return ManhattanDist(a - b, twodee);
         }
-        public static int ManhattanDist(Vector3 a, bool twodee)
+        /// <summary>
+        /// calculates the Manhattan (orthogonal) length of the vector
+        /// </summary>
+        /// <param name="twodee">if true, ignore Z component</param>
+        public static int ManhattanDist(Vector3 offset, bool twodee)
         {
             int dist;
             if (twodee)
-                dist = Mathf.CeilToInt(Mathf.Abs(a.x) + Mathf.Abs(a.y));
+                dist = Mathf.CeilToInt(Mathf.Abs(offset.x) + Mathf.Abs(offset.y));
             else
-                dist = Mathf.CeilToInt(Mathf.Abs(a.x) + Mathf.Abs(a.y) + Mathf.Abs(a.z));
+                dist = Mathf.CeilToInt(Mathf.Abs(offset.x) + Mathf.Abs(offset.y) + Mathf.Abs(offset.z));
 
             return dist;
         }
 
-        // bounds the input angle to -180...180, relative to the angleRelative
+        /// <summary>
+        /// clamps the angle to the range -180...180, relative to the angleRelative
+        /// </summary>
         public static float BoundAngle(float angle, float angleRelative = 0)
         {
             float angleOut = angle - angleRelative;
@@ -50,10 +59,18 @@ namespace CoSeph.Core
             return angleOut;
         }
 
-        // returns the internal area of input rect
-        public static float RectArea(Rect input)
+        private static float GetRectPreferredValue(Rect rect, RectSelectionPreference selectPref)
         {
-            return (input.width * input.height);
+            switch (selectPref)
+            {
+                case RectSelectionPreference.Widest:
+                    return rect.width;
+                case RectSelectionPreference.Tallest:
+                    return rect.height;
+                default:
+                case RectSelectionPreference.Largest:
+                    return rect.Area();
+            }
         }
 
         /// <summary>
@@ -63,13 +80,16 @@ namespace CoSeph.Core
         /// - Meet the supplied minimum width and height
         ///
         /// The selection criterion is defined by RectSelectionPreference.
+        /// Note that in the event of a tie, it will randomly choose the tied rects.
+        /// When deterministicTies is true, the random selection is seeded
+        /// using pointStart to ensure repeatable results.
         /// Returns false if no valid rectangle exists.
         /// </summary>
-        public static bool BiggestRect(out Rect result, List<Vector3Int> points, Vector3Int pointStart, RectSelectionPreference selectPref, int minWidth = 1, int minHeight = 1)
+        public static bool BiggestRect(out Rect result, List<Vector3Int> points, Vector3Int pointStart, RectSelectionPreference selectPref, int minWidth = 1, int minHeight = 1, bool deterministicTies = false)
         {
             List<Rect> rectAll = BiggestRectAll(points, pointStart, minWidth, minHeight);
-            Rect rectSelected;
-            float biggest;
+            float biggestSize;
+            List<Rect> rectMatch = new List<Rect>();
 
 #if UNITY_EDITOR
             string DEBUGSTRING = "rects found: " + rectAll.Count;
@@ -85,64 +105,35 @@ namespace CoSeph.Core
                 return false;
             }
 
-            rectSelected = rectAll[0];
-            switch (selectPref)
-            {
-                case RectSelectionPreference.Widest:
-                    {
-                        biggest = rectSelected.width;
-                        break;
-                    }
-                case RectSelectionPreference.Tallest:
-                    {
-                        biggest = rectSelected.height;
-                        break;
-                    }
-                default:
-                case RectSelectionPreference.Largest:
-                    {
-                        biggest = RectArea(rectSelected);
-                        break;
-                    }
-            }
+            rectMatch.Add(rectAll[0]);
+            biggestSize = GetRectPreferredValue(rectAll[0], selectPref);
 
             for (int i = 1; i < rectAll.Count; i++)
             {
-                switch (selectPref)
+                float biggestSizeCompare = GetRectPreferredValue(rectAll[i], selectPref);
+
+                if (biggestSizeCompare > biggestSize)
                 {
-                    case RectSelectionPreference.Widest:
-                        {
-                            if (rectAll[i].width > biggest)
-                            {
-                                rectSelected = rectAll[i];
-                                biggest = rectSelected.width;
-                            }
-                            break;
-                        }
-                    case RectSelectionPreference.Tallest:
-                        {
-                            if (rectAll[i].height > biggest)
-                            {
-                                rectSelected = rectAll[i];
-                                biggest = rectSelected.width;
-                            }
-                            break;
-                        }
-                    default:
-                    case RectSelectionPreference.Largest:
-                        {
-                            float areaCheck = RectArea(rectAll[i]);
-                            if (areaCheck > biggest)
-                            {
-                                rectSelected = rectAll[i];
-                                biggest = areaCheck;
-                            }
-                            break;
-                        }
+                    // clear old matches
+                    rectMatch.Clear();
+                    rectMatch.Add(rectAll[i]);
+                    biggestSize = biggestSizeCompare;
+                }
+                else if (biggestSizeCompare == biggestSize)
+                {
+                    // add to the existing matches
+                    rectMatch.Add(rectAll[i]);
                 }
             }
 
-            result = rectSelected;
+            if (deterministicTies)
+            {
+                int seed = pointStart.GetHashCode();
+                System.Random rng = new System.Random(seed);
+                result = rectMatch[rng.Next(rectMatch.Count)];
+            }
+            else
+                result = rectMatch[Random.Range(0, rectMatch.Count)];
             return true;
         }
 
@@ -166,8 +157,8 @@ namespace CoSeph.Core
 
             public Span(Vector3Int point)
             {
-                AddPoint(point);
                 spanY = point.y;
+                AddPoint(point);
                 xMin = int.MaxValue;
                 xMax = int.MinValue;
             }

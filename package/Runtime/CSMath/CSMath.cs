@@ -4,19 +4,17 @@ namespace CoSeph.Core
 {
     public static class CSMath
     {
-        // ---------------------
-        // MATH
-        // ---------------------
         // works with cos too
-        public static float SinExaggerator(float sin, float degree)
+        public static float SinExaggerator(float sin, float strength)
         {
-            if (degree > 0)
+            float result = sin;
+            if (strength > 0)
             {
                 bool negative = (sin < 0);
-                float sinExaggerated = Mathf.Pow(Mathf.Abs(sin), 1f / degree) * (negative ? -1 : 1);
+                float sinExaggerated = Mathf.Pow(Mathf.Abs(sin), 1f / strength) * (negative ? -1 : 1);
                 return sinExaggerated;
             }
-            return sin;
+            return result;
         }
 
         // returns the number of digits in the provided number
@@ -29,11 +27,6 @@ namespace CoSeph.Core
                 return Mathf.FloorToInt(Mathf.Log10(-n)) + 1;
 
             return 1;
-        }
-
-        public static bool ApproxVector(Vector2 a, Vector2 b)
-        {
-            return (Mathf.Approximately(a.x, b.x) && Mathf.Approximately(a.y, b.y));
         }
     }
 }
