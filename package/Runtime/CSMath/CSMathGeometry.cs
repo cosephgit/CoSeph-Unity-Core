@@ -1,9 +1,10 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace CoSeph.Core
 {
+    // Note: If multiple rectangles tie for the selected preference,
+    // the first encountered rectangle is chosen.
     public enum RectSelectionPreference
     {
         Widest,
@@ -54,56 +55,108 @@ namespace CoSeph.Core
         {
             return (input.width * input.height);
         }
-        // finds the biggest rect that can fit the supplied list of points
-        // assumes that points are on a unit grid, so any absence of a point is an invalid position for a rect
-        // problem: there are multiple answers to this question in any sort of irregular space
-        // how to arbitrate?
-        // 1: return array of possible biggest rects (use this as method #2)
-        // 2: take a parameter indicating a preference (e.g. widest or tallest or largest area)
-        public static Rect BiggestRect(List<Vector3Int> points, Vector3Int pointStart, RectSelectionPreference rectPref, int minWidth = 1, int minHeight = 1)
+
+        /// <summary>
+        /// Selects a single "best" rectangle from all valid rectangles that:
+        /// - Are fully composed of contiguous points on a unit grid
+        /// - Include pointStart
+        /// - Meet the supplied minimum width and height
+        ///
+        /// The selection criterion is defined by RectSelectionPreference.
+        /// Returns false if no valid rectangle exists.
+        /// </summary>
+        public static bool BiggestRect(out Rect result, List<Vector3Int> points, Vector3Int pointStart, RectSelectionPreference selectPref, int minWidth = 1, int minHeight = 1)
         {
             List<Rect> rectAll = BiggestRectAll(points, pointStart, minWidth, minHeight);
-            Rect rectSelected = rectAll[0];
+            Rect rectSelected;
+            float biggest;
 
-            string DEBUGSTRING = "";
+#if UNITY_EDITOR
+            string DEBUGSTRING = "rects found: " + rectAll.Count;
             for (int i = 0; i < rectAll.Count; i++)
-                DEBUGSTRING += rectAll[i];
+                DEBUGSTRING += "  " + rectAll[i];
 
-            //Debug.Log("rects found " + DEBUGSTRING);
+            Debug.Log(DEBUGSTRING);
+#endif
+
+            if (rectAll.Count == 0)
+            {
+                result = Rect.zero;
+                return false;
+            }
+
+            rectSelected = rectAll[0];
+            switch (selectPref)
+            {
+                case RectSelectionPreference.Widest:
+                    {
+                        biggest = rectSelected.width;
+                        break;
+                    }
+                case RectSelectionPreference.Tallest:
+                    {
+                        biggest = rectSelected.height;
+                        break;
+                    }
+                default:
+                case RectSelectionPreference.Largest:
+                    {
+                        biggest = RectArea(rectSelected);
+                        break;
+                    }
+            }
 
             for (int i = 1; i < rectAll.Count; i++)
             {
-                switch (rectPref)
+                switch (selectPref)
                 {
                     case RectSelectionPreference.Widest:
                         {
-                            if (rectAll[i].width > rectSelected.width) rectSelected = rectAll[i];
+                            if (rectAll[i].width > biggest)
+                            {
+                                rectSelected = rectAll[i];
+                                biggest = rectSelected.width;
+                            }
                             break;
                         }
                     case RectSelectionPreference.Tallest:
                         {
-                            if (rectAll[i].height > rectSelected.height) rectSelected = rectAll[i];
+                            if (rectAll[i].height > biggest)
+                            {
+                                rectSelected = rectAll[i];
+                                biggest = rectSelected.width;
+                            }
                             break;
                         }
                     default:
                     case RectSelectionPreference.Largest:
                         {
-                            if (RectArea(rectAll[i]) > RectArea(rectSelected)) rectSelected = rectAll[i];
+                            float areaCheck = RectArea(rectAll[i]);
+                            if (areaCheck > biggest)
+                            {
+                                rectSelected = rectAll[i];
+                                biggest = areaCheck;
+                            }
                             break;
                         }
                 }
             }
 
-            return rectSelected;
+            result = rectSelected;
+            return true;
         }
-        // this version creates a list of all the largest rects that can fit the space (the widest rect at each possible height)
-        // they must all contain pointStart
-        // TODO currently just returns the widest one because this is a lot of work to do in one morning
-        // midwidth and minheight don't currently do anything
 
+        /// <summary>
+        /// Represents a horizontal span of grid points at a fixed Y coordinate.
+        /// A span stores all points on that row and can compute the maximal contiguous
+        /// X range that aligns with a given reference point (typically pointStart).
+        ///
+        /// A span is only considered valid if it contains the X position of the reference
+        /// point; otherwise it cannot participate in a contiguous rectangle.
+        /// </summary>
         private class Span
         {
-            private int spanY; // the y position of this span
+            private int spanY; // Fixed Y coordinate shared by all points in this span
             private int xMin;
             private int xMax;
             public int PointCount => spanPoints.Count;
@@ -122,7 +175,7 @@ namespace CoSeph.Core
             {
                 if (point.y != spanY)
                 {
-                    Debug.LogError($"Span.Addpoint tried to add mismatched {point} to spanY {spanY}");
+                    Debug.LogError($"Span.AddPoint attempted to add point {point} with mismatched Y (expected {spanY})");
                     return false;
                 }
                 if (spanPoints.Contains(point))
@@ -130,8 +183,8 @@ namespace CoSeph.Core
                 spanPoints.Add(point);
                 return true;
             }
-            // ExtendXMax and ExtendXMin must only be called by IdentifyLimits, which inits spanPointsSet
-            // if the point is in the spanPoints, we can extend the xMax to this point
+            // ExtendXMax / ExtendXMin are internal helpers for IdentifyLimits.
+            // They assume the caller is expanding contiguously from a known-valid start point.
             private bool ExtendXMax(Vector3Int point)
             {
                 if (spanPoints.Contains(point))
@@ -142,7 +195,6 @@ namespace CoSeph.Core
                 else
                     return false;
             }
-            // if the point is in the spanPoints, we can extend the xMax to this point
             private bool ExtendXMin(Vector3Int point)
             {
                 if (spanPoints.Contains(point))
@@ -170,8 +222,9 @@ namespace CoSeph.Core
 
                 xMin = xMax = pointStart.x;
 
-                // PointCount is used as a hard upper bound to guarantee termination - it should logically have checked every point if it ever reaches it.
-                // In normal operation the loop exits early when both directions fail.
+                // PointCount is a defensive upper bound to guarantee termination.
+                // If reached, the span must be perfectly contiguous in at least one direction;
+                // otherwise the loop exits early when contiguity fails.
                 for (int i = 1; i < PointCount; i++)
                 {
                     // check in both directions
@@ -185,7 +238,7 @@ namespace CoSeph.Core
                     {
                         pointTest.x = pointStart.x - i;
                         if (!ExtendXMin(pointTest))
-                            canDecreaseMin = false;// have run out of contiguous points, can not increase x max further
+                            canDecreaseMin = false;// have run out of contiguous points, can not decrease x min further
                     }
                     if (!canDecreaseMin && !canIncreaseMax)
                         break; // both extensions have failed, we have widened this span as much as possible
@@ -201,10 +254,10 @@ namespace CoSeph.Core
 #endif
                 return true;
             }
+            // Clamp this span's X limits to the bounds of the reference span.
+            // Any rectangle including pointStart cannot exceed these limits.
             public void ClampLimits(Span spanReference)
             {
-                // spanReference is the pointStart-aligned span
-                // there is no point checking for xMin or Xmax outside the bounds of spanReference
                 if (spanReference.XMax > xMax)
                     xMax = spanReference.XMax;
                 if (spanReference.XMin < xMin)
@@ -212,32 +265,61 @@ namespace CoSeph.Core
             }
         }
 
+        /// <summary>
+        /// Finds all maximal axis-aligned rectangles composed entirely of contiguous points
+        /// that include <paramref name="pointStart"/>.
+        ///
+        /// A rectangle is considered valid if:
+        /// - Every grid point within its bounds exists in <paramref name="points"/>
+        /// - All points are contiguously connected via shared edges (no gaps)
+        /// - The rectangle includes <paramref name="pointStart"/>
+        /// - The rectangle meets the supplied minimum width and height constraints
+        ///
+        /// The algorithm operates on horizontal spans grouped by Y coordinate and expands
+        /// outward from <paramref name="pointStart"/> in both X and Y directions. Expansion
+        /// is bounded by contiguity and span overlap, not by absolute coordinate range.
+        ///
+        /// All returned rectangles are maximal for their respective widths; smaller rectangles
+        /// with identical vertical bounds are intentionally suppressed.
+        ///
+        /// IMPORTANT:
+        /// This method relies on specific iteration ordering guarantees to avoid redundant
+        /// rectangle generation. Changing loop structure, enumeration order, or span-clamping
+        /// logic may invalidate correctness.
+        /// <param name="points">Set of occupied grid points.</param>
+        /// <param name="pointStart">A point that must be contained within all returned rectangles.</param>
+        /// <param name="minWidth">Minimum rectangle width (inclusive).</param>
+        /// <param name="minHeight">Minimum rectangle height (inclusive).</param>
+        /// <returns>A list of maximal rectangles satisfying the constraints.</returns>
+        /// </summary>
         public static List<Rect> BiggestRectAll(List<Vector3Int> points, Vector3Int pointStart, int minWidth = 1, int minHeight = 1)
         {
             List<Rect> output = new List<Rect>();
-            Vector3Int pointTest = new Vector3Int(pointStart.x, pointStart.y);
-            Rect rectTest = new Rect(new Vector2(pointStart.x, pointStart.y), Vector2.zero);
             HashSet<Vector3Int> pointsSet = new HashSet<Vector3Int>(points); // convert for faster checks as we need to use .Contains a lot here
-            // the spanList matches the key (a y value) to a Span (xMin and xMax value)
-            Dictionary<int, Span> spanList = new Dictionary<int, Span>();
-            int spanYMin = pointStart.y, spanYMax = pointStart.y;
+            // spansByY matches the key (a y value) to a Span (points, xMin and xMax value)
+            Dictionary<int, Span> spansByY = new Dictionary<int, Span>();
+            int spanYMin, spanYMax;
+            Span spanStart;
 
             // if pointStart is not in points, no rectangles are possible
             if (!pointsSet.Contains(pointStart))
                 return output;
 
-            // first make a dictionary of the spans, storing the points in each, so we can easily find the width of each span
+            // Group points into horizontal spans keyed by Y coordinate,
+            // allowing efficient determination of contiguous X ranges per row.
             foreach (Vector3Int point in points)
             {
-                if (spanList.ContainsKey(point.y))
-                    spanList[point.y].AddPoint(point);
+                if (spansByY.ContainsKey(point.y))
+                    spansByY[point.y].AddPoint(point);
                 else // new span, initialise
-                    spanList.Add(point.y, new Span(point));
+                    spansByY.Add(point.y, new Span(point));
             }
 
-            // since pointSet.Contains(pointStart) we can assume this exists in the spanList
-            spanList[pointStart.y].IdentifyLimits(pointStart);
-            if (spanList[pointStart.y].XMax - spanList[pointStart.y].XMin + 1 < minWidth)
+            // since pointSet.Contains(pointStart) we can assume this exists in the spansByY
+            spanStart = spansByY[pointStart.y];
+
+            spanStart.IdentifyLimits(pointStart);
+            if (spanStart.XMax - spanStart.XMin + 1 < minWidth)
             {
                 // the start span is not wide enough to meet any width requirements - fail
                 return output;
@@ -246,60 +328,48 @@ namespace CoSeph.Core
             spanYMin = spanYMax = pointStart.y;
             bool canIncreaseY = true;
             bool canDecreaseY = true;
-            int maxSpans = spanList.Count;
-            // validate all the spans are connected
-            // maxSpans is used as a hard upper bound to guarantee termination - it should logically have checked every point if it ever reaches it.
-            // In normal operation the loop exits early when both directions fail.
-            for (int i = 1; i < maxSpans; i++)
+            int spanCountLimit = spansByY.Count;
+            // Validate vertical contiguity of spans relative to pointStart.
+            // spanCountLimit is a defensive upper bound to guarantee termination;
+            // logical termination occurs when contiguity fails in both directions.
+            for (int i = 1; i < spanCountLimit; i++)
             {
-                int checkY = pointStart.y + i;
+                int checkY;
 
                 if (canIncreaseY)
                 {
-                    if (spanList.ContainsKey(checkY))
+                    checkY = pointStart.y + i;
+                    if (spansByY.ContainsKey(checkY))
                     {
                         // the next span exists, so check the extents
-                        if (spanList[checkY].IdentifyLimits(pointStart))
+                        if (spansByY[checkY].IdentifyLimits(pointStart))
                         {
                             spanYMax = checkY; // confirmed this span connects along the axis
-                            spanList[checkY].ClampLimits(spanList[pointStart.y]);
+                            spansByY[checkY].ClampLimits(spanStart);
                         }
-                        else
-                        {
-                            // the next span can not connect contiguously and linearly to PointStart
-                            // so remove this span from the spanList, there's no need to check it again
-                            spanList.Remove(checkY);
-                        }
+                        // else the next span can not connect contiguously and linearly to PointStart
                     }
                     else // else we can't extend this way
                         canIncreaseY = false;
                 }
-                else // remove this span from the list, if present, as there's no more need for it
-                    spanList.Remove(checkY);
 
-                checkY = pointStart.y - i;
                 if (canDecreaseY)
                 {
-                    if (spanList.ContainsKey(checkY))
+                    checkY = pointStart.y - i;
+
+                    if (spansByY.ContainsKey(checkY))
                     {
                         // the next span exists, so check the extents
-                        if (spanList[checkY].IdentifyLimits(pointStart))
+                        if (spansByY[checkY].IdentifyLimits(pointStart))
                         {
                             spanYMin = checkY; // confirmed this span connects along the axis
-                            spanList[checkY].ClampLimits(spanList[pointStart.y]);
+                            spansByY[checkY].ClampLimits(spanStart);
                         }
-                        else
-                        {
-                            // the next span can not connect contiguously and linearly to PointStart
-                            // so remove this span from the spanList, there's no need to check it again
-                            spanList.Remove(checkY);
-                        }
+                        // else the next span can not connect contiguously and linearly to PointStart
                     }
                     else // else we can't extend this way
                         canDecreaseY = false;
                 }
-                else // remove this span from the list, if present, as there's no more need for it
-                    spanList.Remove(checkY);
 
                 if (!canIncreaseY && !canDecreaseY)
                     break; // finished
@@ -311,33 +381,31 @@ namespace CoSeph.Core
                 return output;
             }
 
-            // we now have a list of spans which are all connected along a single y value
-            // now we can find out the biggest rects
-            maxSpans = spanList.Count; // refresh count
-            // now we check through every possible box width that overlaps with pointStart
-            for (int rectXMin = spanList[pointStart.y].XMin; rectXMin <= pointStart.x; rectXMin++)
+            // At this point, all spans reachable from pointStart via contiguous Y expansion
+            // have been identified and clamped to compatible X limits.
+            // We now enumerate maximal rectangles anchored at pointStart.
+            for (int rectXMin = spanStart.XMin; rectXMin <= pointStart.x; rectXMin++)
             {
-                for (int rectXMax = spanList[pointStart.y].XMax; rectXMax >= pointStart.x; rectXMax++)
+                for (int rectXMax = spanStart.XMax; rectXMax >= pointStart.x; rectXMax++)
                 {
                     if (rectXMax - rectXMin + 1 < minWidth)
                         continue; // does not meet width requirements - skip
 
-                    // we are now going to try to make a rect bounded by rectXMin and rectXMax
                     int rectYMin = pointStart.y;
-                    canIncreaseY = true;
                     int rectYMax = pointStart.y;
+                    canIncreaseY = true;
                     canDecreaseY = true;
 
-                    for (int i = 1; i < maxSpans; i++)
+                    for (int i = 1; i < spanCountLimit; i++)
                     {
                         if (canIncreaseY)
                         {
                             int checkY = pointStart.y + i;
 
-                            if (spanList.ContainsKey(checkY))
+                            if (spansByY.ContainsKey(checkY))
                             {
-                                if (spanList[checkY].XMin > rectXMin
-                                    || spanList[checkY].XMax < rectXMax)
+                                if (spansByY[checkY].XMin > rectXMin
+                                    || spansByY[checkY].XMax < rectXMax)
                                 {
                                     // span can not permit these limits
                                     canIncreaseY = false;
@@ -355,10 +423,10 @@ namespace CoSeph.Core
                         {
                             int checkY = pointStart.y - i;
 
-                            if (spanList.ContainsKey(checkY))
+                            if (spansByY.ContainsKey(checkY))
                             {
-                                if (spanList[checkY].XMin > rectXMin
-                                    || spanList[checkY].XMax < rectXMax)
+                                if (spansByY[checkY].XMin > rectXMin
+                                    || spansByY [checkY].XMax < rectXMax)
                                 {
                                     // span can not permit these limits
                                     canDecreaseY = false;
@@ -374,14 +442,23 @@ namespace CoSeph.Core
                         }
 
                         if ((!canIncreaseY && !canDecreaseY)
-                            || i == (maxSpans - 1)) // rare but technically possible that it reaches the last iteration
+                            || i == (spanCountLimit - 1)) // rare but technically possible that it reaches the last iteration
                         {
-                            // have checked all that are possible
                             // we've found the biggest rect with this xmin and xmax
-                            // if it meets minimums, add it and break out
+                            // validate and add
 
-                            // TODO - it's technically possible that we will find a box that is the same height, but narrower than a previous box
-                            // still need to check for that and avoid added smaller boxes
+                            // IMPORTANT: Rectangle enumeration order guarantees correctness here.
+                            // Rectangles are generated in strictly decreasing width order for any given
+                            // (rectYMin, rectYMax) pair. Therefore, if the previous rectangle has the same
+                            // vertical bounds, the current rectangle must be narrower and cannot be maximal.
+                            // Changing loop ordering or enumeration strategy will invalidate this assumption.
+                            if (output.Count > 0)
+                            {
+                                if (output[output.Count - 1].yMin == rectYMin
+                                    && output[output.Count - 1].yMax + 1 == rectYMax)
+                                    continue;
+                            }
+
 
                             Vector2 corner = new Vector2(rectXMin, rectYMin);
                             Vector2 size = new Vector2(rectXMax - rectXMin + 1, rectYMax - rectYMin + 1);
@@ -397,128 +474,6 @@ namespace CoSeph.Core
             }
 
             return output;
-
-            /*
-             * temporarily retaining old code 
-            while (pointsSet.Contains(pointTest))
-            {
-                xMinPossible = pointTest.x;
-                pointTest.x--;
-            }
-
-            pointTest.x = pointStart.x + 1;
-            while (pointsSet.Contains(pointTest))
-            {
-                xMaxPossible = pointTest.x + 1;
-                pointTest.x++;
-            }
-            */
-
-            /*
-            // we have now established the minimum and maximum x values in a contiguous span from pointStart
-
-            if (xMaxPossible - xMinPossible < minWidth)
-                return output; // return empty list - no viable rectangles
-
-            // now we check the above and below spans and find out their maximum widths
-            pointTest.x = pointStart.x;
-            pointTest.y = pointStart.y - 1;
-            while (pointsSet.Contains(pointTest))
-            {
-                yMinPossible = pointTest.y;
-                pointTest.y--;
-            }
-
-            pointTest.y = pointStart.y + 1;
-            while (pointsSet.Contains(pointTest))
-            {
-                yMaxPossible = pointTest.y + 1;
-                pointTest.y++;
-            }
-            */
-            /*
-             * ok let's logic this out
-             * start with the maximum width and find out the maximum height of a rectangle at that width
-             * so we start with xMinCurrent and xMaxCurrent
-             * 
-             * so in prep we find the min and max x value of each y value started around the pointStart
-             * then we for each xMin and xMax, we go up and down to find the yMin and yMax
-             * once we can't add more rows, we've found the max, store the rect
-             * so we drop down to the next lowest xMin OR xMax value
-             * then repeat until we've checked all combinations of XMin and xMax
-             * then we have a list of rects
-             * then we can wortk out optimise for width, optimise for height, optimise for squareness, and optimise for total area
-             */
-            /*
-
-            //Debug.Log("RectFindAll initial maxima " + maxima);
-
-            // now work out the x minimum and maximum for each y value
-            int rowCount = yMaxPossible - yMinPossible;
-            int[] xMins = new int[rowCount];
-            int[] xMaxs = new int[rowCount];
-            for (int y = yMinPossible; y < yMaxPossible; y++)
-            {
-                // the yindex for setting the xmin and xmax arrays
-                int yIndex = y - yMinPossible;
-                pointTest.y = y;
-                xMins[yIndex] = pointStart.x;
-                xMaxs[yIndex] = pointStart.x + 1;
-
-                // incrementally check out from the y axis to see if there's a point in the position
-                for (int x = pointStart.x; x >= xMinPossible; x--)
-                {
-                    pointTest.x = x;
-                    if (pointsSet.Contains(pointTest))
-                    {
-                        // there is a point, so push the xMin for this row out
-                        xMins[yIndex] = x;
-                    }
-                    else
-                        break; // else there is no point so we've found the xMin
-                }
-                for (int x = pointStart.x; x < xMaxPossible; x++)
-                {
-                    pointTest.x = x;
-                    if (pointsSet.Contains(pointTest))
-                    {
-                        // there is a point, so push the xMax for this row out
-                        xMaxs[yIndex] = x + 1;
-                    }
-                    else
-                        break; // else there is no point so we've found the xMax
-                }
-
-                //Debug.Log("RectFinderAll for y " + y + " xMin " + xMins[yIndex] + " xMax " + xMaxs[yIndex]);
-            }
-
-            // go through each possible combination of y mins and maxes and find the widest rect that can fit them all
-            // this does not seem very efficient - but not a massive cost and a lot of work to refactor to be more efficient
-            // it's also uncertain if this will produce every possible result and needs further analysis, but it will produce the best (widest, biggest and tallest) results
-            for (int yMin = yMinPossible; yMin <= pointStart.y; yMin++)
-            {
-                for (int yMax = pointStart.y + 1; yMax <= yMaxPossible; yMax++)
-                {
-                    int xMin = xMinPossible;
-                    int xMax = xMaxPossible;
-
-                    rectTest.yMin = yMin;
-                    rectTest.yMax = yMax;
-
-                    for (int yCheck = yMin; yCheck < yMax; yCheck++)
-                    {
-                        int yIndex = yCheck - yMinPossible;
-                        if (xMins[yIndex] > xMin) xMin = xMins[yIndex];
-                        if (xMaxs[yIndex] < xMax) xMax = xMaxs[yIndex];
-                    }
-
-                    rectTest.xMin = xMin;
-                    rectTest.xMax = xMax;
-
-                    output.Add(new Rect(rectTest));
-                }
-            }
-            */
         }
 
         // returns all points (integer coordinates) in the provided area (yMax and xMax exclusive)
