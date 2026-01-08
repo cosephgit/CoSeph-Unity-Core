@@ -59,7 +59,7 @@ namespace CoSeph.Core
         private ParticleSystem.MinMaxGradient[] _colorCacheParticles;
         private bool _colorInitNeeded = true;
         private bool _colorOverrideActive;
-        public bool IsPlaying { get => _effectActive; }
+        public bool IsPlaying => _effectActive;
 
         #region starting effects
         // this stays until called again
@@ -202,14 +202,14 @@ namespace CoSeph.Core
                     _particles[i].Stop(true, ParticleSystemStopBehavior.StopEmitting); // allow remaining particles to finish animating
                 }
                 else
-                    Debug.LogWarning($"CSEffectTimed _particles index {i} is null");
+                    Debug.LogWarning($"CSEffectTimed _particles index {i} is null", this);
             }
             for (int i = 0; i < _effects.Length; i++)
             {
                 if (_effects[i])
                     _effects[i].StopEffect();
                 else
-                    Debug.LogWarning($"CSEffectTimed _effects index {i} is null");
+                    Debug.LogWarning($"CSEffectTimed _effects index {i} is null", this);
             }
 
             // clear floatingeffect
@@ -234,13 +234,13 @@ namespace CoSeph.Core
         {
             if (_effectLifeTime == null)
             {
-                Debug.LogWarning($"CSEffectTimed {name} TurnEnd called while not playing");
+                Debug.LogWarning($"CSEffectTimed {name} TurnEnd called while not playing", this);
                 _effectActive = false;
                 return true; // not playing so treat as if finished (allow deletion, etc)
             }
             if (!_effectActive)
             {
-                Debug.LogWarning($"CSEffectTimed {name} TurnEnd called while inactive");
+                Debug.LogWarning($"CSEffectTimed {name} TurnEnd called while inactive", this);
                 return true; // not playing so treat as if finished (allow deletion, etc)
             }
             _countDown--;
@@ -399,8 +399,8 @@ namespace CoSeph.Core
             _floatingEffectSpeeds = new Vector2[count];
             for (int i = 0; i < count; i++)
             {
-                Vector2 offset = CSMath.RandomVector2D();
-                Vector2 speed = CSMath.RandomVector2D() - offset;
+                Vector2 offset = CSMathRand.RandomVector2D();
+                Vector2 speed = CSMathRand.RandomVector2D() - offset;
                 _floatingEffects[i] = Instantiate(_floatingEffectPrefab, transform);
                 _floatingEffects[i].transform.localPosition = offset * _floatingDistance;
                 _floatingEffectSpeeds[i] = speed * _floatingSpeed;
@@ -420,7 +420,7 @@ namespace CoSeph.Core
                         _floatingEffects[i].transform.localPosition = pos;
                     }
                     else
-                        Debug.LogWarning("CSEffectTimed _floatingEffects " + i + " is null");
+                        Debug.LogWarning("CSEffectTimed _floatingEffects " + i + " is null", this);
                 }
                 yield return new WaitForEndOfFrame();
             }
@@ -437,7 +437,7 @@ namespace CoSeph.Core
                         Destroy(_floatingEffects[i].gameObject);
                     }
                     else
-                        Debug.LogWarning("CSEffectTimed _floatingEffects index " + i + " is null");
+                        Debug.LogWarning("CSEffectTimed _floatingEffects index " + i + " is null", this);
                 }
                 _floatingEffects = new CSEffectTimed[0];
                 _floatingEffectSpeeds = new Vector2[0];

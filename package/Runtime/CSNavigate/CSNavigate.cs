@@ -300,7 +300,7 @@ namespace CoSeph.Core
                 float fullHDist;
 
                 if (_type == NavType.Nav2DOrtho)
-                    fullHDist = CSMath.OrthogonalDist(originNode.transform.position, targetNode.transform.position, true);
+                    fullHDist = CSMathGeometry.ManhattanDist(originNode.transform.position, targetNode.transform.position, true);
                 else
                     fullHDist = (targetNode.transform.position - originNode.transform.position).magnitude;
 

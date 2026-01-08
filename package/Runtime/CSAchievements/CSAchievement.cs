@@ -25,15 +25,15 @@ namespace CoSeph.Core
         /// Unique, stable identifier used for persistence and lookup.
         /// Must not be changed after shipping.
         /// </summary>
-        public string UniqueID { get => uniqueID; }
-        public Sprite IconGot { get => iconGot; }
-        public Sprite IconNotGot { get => iconNotGot; }
-        public float Max { get => max; }
+        public string UniqueID => uniqueID;
+        public Sprite IconGot => iconGot; 
+        public Sprite IconNotGot => iconNotGot; 
+        public float Max => max;
         /// <summary>
         /// Whether progress should be treated as whole numbers (eg. binary or count-based achievements).
         /// Interpretation is left to consuming systems.
         /// </summary>
-        public bool IsInteger { get => integer; }
+        public bool IsInteger => integer;
         // Virtual to allow localization or dynamic overrides
         public virtual string Name { get => textName; }
         public virtual string Desc { get => textDesc; }

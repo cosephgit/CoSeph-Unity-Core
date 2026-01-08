@@ -138,7 +138,7 @@ namespace CoSeph.Core
                                     update = false;
                                     break;
                                 case NavArb.Random:
-                                    update = CSMath.RandomBool();
+                                    update = CSMathRand.RandomBool();
                                     break;
                                 case NavArb.Direct:
                                     Vector3 offset = target.transform.position - node.transform.position;
@@ -285,7 +285,7 @@ namespace CoSeph.Core
                 case NavType.Nav3D:
                     return (transform.position - target).magnitude;
                 case NavType.Nav2DOrtho:
-                    return CSMath.OrthogonalDist(transform.position, target, true);
+                    return CSMathGeometry.ManhattanDist(transform.position, target, true);
                 case NavType.Nav2DFree:
                     return ((Vector2)(transform.position - target)).magnitude;
             }

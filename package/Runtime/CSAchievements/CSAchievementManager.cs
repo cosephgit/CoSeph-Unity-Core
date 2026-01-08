@@ -77,7 +77,7 @@ namespace CoSeph.Core
             {
                 if (!_achievementsCache.TryAdd(allAchievements[i].UniqueID, allAchievements[i]))
                 {
-                    Debug.LogError($"Found duplicate CSAchivement uniqueID {allAchievements[i].UniqueID}");
+                    Debug.LogError($"Found duplicate CSAchivement uniqueID {allAchievements[i].UniqueID}", this);
                 }
             }
         }
@@ -124,7 +124,7 @@ namespace CoSeph.Core
                 return achievement;
             }
 
-            Debug.LogError($"GetAchievementByUnique invalid uniqueGet {uniqueGet}");
+            Debug.LogError($"GetAchievementByUnique invalid uniqueGet {uniqueGet}", this);
             return null;
         }
 
@@ -157,7 +157,7 @@ namespace CoSeph.Core
         {
             if (achievement == null)
             {
-                Debug.LogError("AchievementProgressSet called with null achievement");
+                Debug.LogError("AchievementProgressSet called with null achievement", this);
                 return;
             }
             float newValue = Mathf.Clamp(progress, 0f, achievement.Max);
