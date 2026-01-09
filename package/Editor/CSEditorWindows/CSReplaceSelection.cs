@@ -3,12 +3,11 @@
 using UnityEngine;
 using UnityEditor;
 
-// CSReplaceSelection
-// Replaces all selected objects with another object
-// created 18/11/24
-
 namespace CoSeph.Core.Editor
 {
+    /// <summary>
+    /// TODO
+    /// </summary>
     public class CSReplaceSelection : EditorWindow
     {
         [SerializeField] private GameObject prefab;

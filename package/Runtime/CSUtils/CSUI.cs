@@ -4,71 +4,75 @@ using UnityEngine.EventSystems;
 
 namespace CoSeph.Core
 {
-    public class CSUI : MonoBehaviour
+    /// <summary>
+    /// UI utility methods, such as for interacting with Unity UI and
+    /// generating TextMeshPro sprite-based glyph strings.
+    /// Intended for cases where raster/custom fonts are represented via TMP sprite assets
+    /// (e.g. file paths, symbols, or non-standard glyph sets).
+    /// </summary>
+    public static class CSUI
     {
-        // find all UI objects under the provided screen space point
+        /// <summary>
+        /// Finds all UI elements under a given screen-space position using the current EventSystem
+        /// Returns an empty list if there is no current EventSystem
+        /// </summary>
+        /// <param name="pos">The screen space position to check</param>
+        /// <returns></returns>
         public static List<RaycastResult> GetUIObjects(Vector2 pos)
         {
-            // check if the object is the interactionmenu
-            PointerEventData pointerData = new PointerEventData(EventSystem.current) { pointerId = -1, };
-
-            pointerData.position = pos;
-
-            List<RaycastResult> results = new List<RaycastResult>();
-            EventSystem.current.RaycastAll(pointerData, results);
-
-            return results;
-        }
-
-        // this takes a text string and converts it to a string that will show the desired characters from a TextMeshPro sprite asset
-        // because TMP doesn't play with custom raster fonts
-        // SAMPLES
-        // scoreStringSprite = GameManagerScript.instance.StringToSprite(scoreString, "uifontscore");
-        // spriteasset is a reference to the asset - location and name
-        // str is the source string which must be converted to sprites
-        public static string StringToSprites(string str, string spriteAsset)
-        {
-            string spriteString = "";
-
-            for (int i = 0; i < str.Length; i++)
+            if (EventSystem.current)
             {
-                spriteString += SpriteAssetToSprite(spriteAsset, str[i]);
+                // Create generic pointer event data for UI raycasting
+                PointerEventData pointerData = new PointerEventData(EventSystem.current) { pointerId = -1, };
+
+                pointerData.position = pos;
+
+                List<RaycastResult> results = new List<RaycastResult>();
+                EventSystem.current.RaycastAll(pointerData, results);
+
+                return results;
             }
 
-            return spriteString;
+            Debug.LogWarning("CSUI.GetUIObjects requires an EventSystem.current.");
+            return new List<RaycastResult>();
         }
 
-        // spriteAsset is the sprite sheet to take an entry from, index is the reference on the sheet
+        /// <summary>
+        /// Converts a plain string into a TextMeshPro sprite-tag string,
+        /// mapping each character to a corresponding sprite index.
+        /// Intended for use with TMP sprite assets representing custom glyphs/raster fonts
+        /// (e.g. file paths, symbols, or non-standard characters).
+        /// Assumes the spriteAsset is set up with sprite indices matching character code values
+        /// (e.g. ASCII-compatible layouts)
+        /// EXAMPLE
+        /// stringSprites = CSUI.StringToSprite(string, "assetname");
+        /// </summary>
+        /// <param name="str">Source string to convert</param>
+        /// <param name="spriteAsset">font sprite asset path</param>
+        public static string StringToSprites(string str, string spriteAsset)
+        {
+            if (string.IsNullOrEmpty(str) || string.IsNullOrEmpty(spriteAsset))
+                return string.Empty;
+
+            // each tag string will be at least: 18 (tags) + spriteasset.Length + 1 (minimum per char)
+            System.Text.StringBuilder sb =
+                new System.Text.StringBuilder(str.Length * (19 + spriteAsset.Length));
+
+            for (int i = 0; i < str.Length; i++)
+                sb.Append(SpriteAssetToSprite(spriteAsset, str[i]));
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Converts a sprite asset and character into a TMP sprite tag.
+        /// Assumes the character's numeric value maps directly to a sprite index.
+        /// </summary>
+        /// <param name="spriteAsset">path of the sprite asset</param>
+        /// <param name="index">index of desired sprite in the sprite asset</param>
         public static string SpriteAssetToSprite(string spriteAsset, char index)
         {
             return "<sprite=\"" + spriteAsset + "\" index=" + index + ">";
         }
-        public static string SpriteAssetToSprite(string spriteAsset, int fontOverride = 0, int index = 0)
-        {
-            string result = "<sprite=\"" + spriteAsset + "\" index=" + index + ">";
-            if (fontOverride > 0)
-                result = StringAddSizeTags(result, fontOverride);
-            return result;
-        }
-        public static string StringAddSizeTags(string original, int fontSize)
-        {
-            return "<size=" + fontSize + ">" + original + "</size>";
-        }
-        public static string StringAddVOffset(string original, string offset)
-        {
-            return "<voffset=" + offset + ">" + original + "</voffset>";
-        }
-
-        public static string ApplyGlyphAdjustments(string original, string fontoffset = "", string padding = "")
-        {
-            string glyph = original;
-
-            if (fontoffset.Length > 0) glyph = StringAddVOffset(glyph, fontoffset);
-
-            if (padding.Length > 0) glyph = padding + glyph + padding;
-
-            return glyph;
-        }
-
     }
 }

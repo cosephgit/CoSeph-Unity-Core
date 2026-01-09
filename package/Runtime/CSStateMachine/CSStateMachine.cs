@@ -21,13 +21,13 @@ namespace CoSeph.Core
 #if UNITY_EDITOR
         [SerializeField] private bool debugStateGUI;
 #endif
-        private BaseState _currentState = null;
-        private readonly Dictionary<System.Type, BaseState> states = new();
+        private CSBaseState _currentState = null;
+        private readonly Dictionary<System.Type, CSBaseState> states = new();
         /// <summary>
         /// The currently active state.
         /// Read-only access intended for queries and debugging.
         /// </summary>
-        public BaseState CurrentState => _currentState;
+        public CSBaseState CurrentState => _currentState;
 
         protected virtual void Awake()
         {
@@ -56,7 +56,7 @@ namespace CoSeph.Core
         /// - States must be registered before they can be entered.
         /// </summary>
         /// <param name="state">The state instance to register.</param>
-        protected void RegisterState(BaseState state)
+        protected void RegisterState(CSBaseState state)
         {
             if (state == null)
             {
@@ -95,7 +95,7 @@ namespace CoSeph.Core
         /// Performs an internal state transition.
         /// Enforces exit/enter ordering and prevents redundant transitions.
         /// </summary>
-        private void ChangeState(BaseState newState)
+        private void ChangeState(CSBaseState newState)
         {
             if (ReferenceEquals(_currentState, newState))
             {
@@ -116,9 +116,9 @@ namespace CoSeph.Core
         /// Logs an error if the requested state has not been registered.
         /// </summary>
         /// <typeparam name="T">The concrete state type to enter.</typeparam>
-        public void EnterState<T>() where T : BaseState
+        public void EnterState<T>() where T : CSBaseState
         {
-            if (states.TryGetValue(typeof(T), out BaseState state))
+            if (states.TryGetValue(typeof(T), out CSBaseState state))
             {
                 ChangeState(state);
             }
@@ -133,12 +133,12 @@ namespace CoSeph.Core
         /// Override to set an initial state.
         /// Ensure that the state's OnEnter method does not depend on anything else in Awake().
         /// </summary>
-        protected virtual BaseState GetInitialState()
+        protected virtual CSBaseState GetInitialState()
         {
             return null;
         }
 
-        protected virtual BaseState GetDisabledState()
+        protected virtual CSBaseState GetDisabledState()
         {
             return null;
         }

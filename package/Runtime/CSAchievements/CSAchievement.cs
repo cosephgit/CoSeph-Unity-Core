@@ -8,7 +8,7 @@ namespace CoSeph.Core
     /// Referenced by UniqueID for save/load and runtime lookup.
     /// </summary>
 
-    [CreateAssetMenu(fileName = "Achievement", menuName = "CS/SO/Achievement", order = 0)]
+    [CreateAssetMenu(fileName = "Achievement", menuName = "CS/Achievement", order = 0)]
     public class CSAchievement : ScriptableObject
     {
         // Serialized definition data (authored in editor, read-only at runtime)

@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace CoSeph.Core
 {
-    public static class RectExtension
+    public static class CSRectExtension
     {
         /// <summary>
         /// extension method to calculate the area of a rect

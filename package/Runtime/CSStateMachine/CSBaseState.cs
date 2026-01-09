@@ -5,7 +5,7 @@ namespace CoSeph.Core
     /// States encapsulate behaviour for a specific mode of operation
     /// and are not intended to be used directly.
     /// </summary>
-    public abstract class BaseState
+    public abstract class CSBaseState
     {
         /// <summary>
         /// Owning state machine.
@@ -13,7 +13,7 @@ namespace CoSeph.Core
         protected CSStateMachine _stateMachine;
         public virtual string Name { get => "INVALID STATE"; }
 
-        public BaseState(CSStateMachine stateMachine)
+        public CSBaseState(CSStateMachine stateMachine)
         {
             _stateMachine = stateMachine
                 ?? throw new System.ArgumentNullException(nameof(stateMachine));
