@@ -18,7 +18,8 @@ namespace CoSeph.Core
         Clean, // has not been set up for the current path find yet
         Initial, // has been initialised
         Calculated, // path finding has been calculated to here
-        Start // this is the origin
+        Start, // this is the origin
+        Rejected
     }
 
     public class CSNavNode : MonoBehaviour
@@ -33,8 +34,10 @@ namespace CoSeph.Core
         private float _pathFCost = 0; // total
         private float _pathGCost = 0; // path so far
         private float _pathHCost = 0; // estimated path left REMEMBER THIS MUST BE THE SHORTEST POSSIBLE DISTANCE EVER
+        // set based on specific pawn + nav profile for each search
         private bool _nodePassable = true; // if false this node is a destination only and can't be pathed through
-        public float _pathDistance = 0; // used for Djikstra
+        // used for Djikstra
+        public float _pathDistance = 0;
 
         public float _nodeValue; // general-purpose node evaluation variable can be used for anything e.g. sorting nodes or prioritising routes
 
@@ -60,7 +63,7 @@ namespace CoSeph.Core
             {
                 default:
                 case NavType.Nav2DFree:
-                case NavType.Nav2DOrtho: // should we validate nodes for ortho movement or just assume they'll only be in connect dist if they're valid?
+                case NavType.Nav2DOrtho: // assumes node will only be in connect dist if they're meant to connect
                     {
                         Collider2D[] nodesAdjacent = Physics2D.OverlapCircleAll(transform.position, maxConnectDist, CSNavigate.Instance.LayerNav());
 
@@ -201,60 +204,93 @@ namespace CoSeph.Core
         // set up f value for this node
         public void PathNodeSet(CSNavNode target, CSNavNode previous, float currentG, float pawnValue, CSNavProfile profile)
         {
-            BlockType obstacle = BlockType.Clear;
-            float difficulty = 1f;
             // only set it up if it's not been set up already
-            if (_status == NodeStatus.Clean)
+            if (_status == NodeStatus.Clean
+                || _status == NodeStatus.Initial)
             {
-                // add to dirty node list
-                CSNavigate.Instance._navNodeDirty.Add(this);
+                BlockType obstacle = BlockType.Clear;
+                float difficulty = 1f;
+
+                if (_status == NodeStatus.Clean) // add to dirty node list
+                    CSNavigate.Instance._navNodeDirty.Add(this);
 
                 // only need to check for obstacles when this node isn't the destination
                 if (target != this)
                 {
                     if (!_nodePassable)
                     {
-                        _status = NodeStatus.Calculated;
+                        _status = NodeStatus.Rejected;
                         return;
                     }
 
                     //obstacle = CSNavigate.instance.blockCheck.NodeBlocked(this, out difficulty);
 
+                    // TODO we're currently checking this every time a node is checked but it never changes within one search
+                    // (i.e. including shortest path comparison checks)
                     obstacle = profile.CheckBlocked(this, false);
 
                     if ((obstacle == BlockType.Pawn && pawnValue <= 0)
                         || obstacle == BlockType.Block)
                     {
-                        _status = NodeStatus.Calculated; // blocked, don't consider this node for pathfinding
+                        _status = NodeStatus.Rejected;
                         return;
                     }
                     else
                     {
-                        difficulty = profile.MoveCost(target);
+                        difficulty = profile.MoveCost(this);
                     }
                 }
 
+                float newG;
                 // G cost is modified by this node difficulty - usable for things like difficult terrain
                 if (obstacle == BlockType.Pawn) // pawnvalue is necessarily > 0 to get here
                 {
                     // so allow pathing through pawns, but adjust the space value
-                    _pathGCost = currentG + NodeDistance(previous) * pawnValue * difficulty;
-                    //pathHCost = NodeDistance(target) * pawnValue;
-                    _pathHCost = NodeDistance(target);
+                    newG = currentG + NodeDistance(previous) * pawnValue * difficulty;
+                    //_pathGCost = currentG + NodeDistance(previous) * pawnValue * difficulty;
                 }
                 else
                 {
-                    _pathGCost = currentG + NodeDistance(previous) * difficulty;
-                    _pathHCost = NodeDistance(target);
+                    newG = currentG + NodeDistance(previous) * difficulty;
+                    //_pathGCost = currentG + NodeDistance(previous) * difficulty;
                 }
+
+                if (_status == NodeStatus.Clean)
+                {
+                    // set once, never changes within one path search
+                    _pathHCost = NodeDistance(target);
+                    // no data yet so can just set this
+                    _pathGCost = newG;
+                    _status = NodeStatus.Initial; // this node has been initialised
+                }
+                else // .Initial
+                {
+                    // we've already seen this node, so we need to check if the new route is 
+                    if (newG < _pathGCost)
+                    {
+                        // shorter route found
+                        _pathGCost = newG;
+                    }
+                    else if (newG == _pathGCost)
+                    {
+                        // TODO
+                        _pathGCost = newG;
+                    }
+                    else// this new G is worse, ignore
+                        return;
+                }
+
+                // we have either found a new shortest route, or have routed here for the first time:
                 _pathFCost = _pathGCost + _pathHCost;
+                _pathPrev = previous;
+
+                // TODO might need to review this, for the possibility of revisiting the node later via a different path
                 if (profile._max > 0 && _pathFCost > profile._max)
                 {
-                    _status = NodeStatus.Calculated; // too far, don't consider this node for pathfinding
+                    _status = NodeStatus.Rejected; // too far, don't consider this node for pathfinding
                     return;
                 }
-                _status = NodeStatus.Initial; // this node has been initialised
-                _pathPrev = previous;
+
             }
         }
 
@@ -292,7 +328,7 @@ namespace CoSeph.Core
         }
 
         // currently just returns this node if it's a valid connection, else null
-        // TODO probably rework this to do more, or at least rename it
+        // TODO possibly add an overload to return a direction instead of a node
         public CSNavNode PathDirFrom(CSNavNode origin)
         {
             if (origin._nodeConnections.Contains(this)) return this;

@@ -215,7 +215,7 @@ namespace CoSeph.Core
                         {
                             CSNavNodeEdge obstacle = collide.GetComponent<CSNavNodeEdge>();
 
-                            if (obstacle && obstacle._blocking) return true;
+                            if (obstacle && obstacle.IsBlocking()) return true;
                         }
                         break;
                     }
@@ -226,7 +226,7 @@ namespace CoSeph.Core
                         {
                             CSNavNodeEdge obstacle = hit.transform.GetComponent<CSNavNodeEdge>();
 
-                            if (obstacle && obstacle._blocking) return true;
+                            if (obstacle && obstacle.IsBlocking()) return true;
                         }
                         break;
                     }
@@ -237,7 +237,7 @@ namespace CoSeph.Core
                         {
                             CSNavNodeEdge obstacle = hit[0].transform.GetComponent<CSNavNodeEdge>();
 
-                            if (obstacle && obstacle._blocking) return true;
+                            if (obstacle && obstacle.IsBlocking()) return true;
                         }
                         break;
                     }
@@ -552,7 +552,10 @@ namespace CoSeph.Core
         public List<CSNavNode> FindWidowedNodes(CSNavNode nodeTest, LayerMask layersAvoid)
         {
             List<CSNavNode> nodesBroken = new List<CSNavNode>();
-            CSNavProfile profile = new CSNavProfile(NavArb.Direct, BlockHandling.Ignore, 0f, -1f, layersAvoid); // dummy profile just for a simple node connectivity test
+            // TODO need to do something to add max layersAvoid as that's been removed
+            // TODO plus need to add a set of blockRules rather than null
+            // this is broken right now
+            CSNavProfile profile = new CSNavProfile(null, NavArb.Direct, BlockHandling.Ignore, 0f, -1f); // dummy profile just for a simple node connectivity test
             List<CSNavNode> nodeMapTest = PathfindAll(nodeTest, profile);
             //List<CSNavNode> nodeMapTest = PathfindAll(nodeTest, true, 0);
 
