@@ -3,8 +3,18 @@ CoSeph Unity Core asset package
 
 Shared runtime and editor utilities and systems used across CoSeph Unity projects.
 
+## Requirements
+
+- Unity 2022.3 LTS or newer
+- .NET Standard 2.1 compatible
+
 ## Installation
-Download with the Unity package manager:
+
+Install via Unity Package Manager:
+
+1. Open **Window → Package Manager**
+2. Click **+ → Add package from git URL**
+3. Paste:
 https://github.com/cosephgit/CoSeph-Unity-Core.git?path=/package
 
 ## Contents
@@ -24,8 +34,9 @@ https://github.com/cosephgit/CoSeph-Unity-Core.git?path=/package
   - Windows/
 
 - **Samples/**
-  - BiggestRect/ - CSMathGeometry.CSBiggestRect method
-  - Parallax - CSParallax class
-  - EffectTimed - CSEffectTimed class
+  - BiggestRect - scene demonstrating CSMathGeometry.BiggestRect method
+  - Parallax - scene demonstrating CSParallax class
+  - EffectTimed - scene demonstrating CSEffectTimed class
 
-
+## License
+MIT. See LICENSE.
