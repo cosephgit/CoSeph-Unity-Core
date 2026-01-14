@@ -77,6 +77,7 @@ crashlytics-build.properties
 # CoSeph Core - 
 # Backup files
 *.bak
+*.bak.meta
 # Project folders
 /[Aa]ssets/
 /[Pp]ackages/
