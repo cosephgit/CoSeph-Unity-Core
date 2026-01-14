@@ -13,7 +13,7 @@ namespace CoSeph.Core
         private const int COLLECTIONDEBUGLIMIT = 20;
 
         /// <summary>
-        /// Standardised string formatting for clean debug logs.
+        /// Standardised string formatting for clean and easy debug logs.
         /// </summary>
         public static string ToStringDebug<T>(this T value)
         {
@@ -25,7 +25,10 @@ namespace CoSeph.Core
                 int i => i.ToString("D", CultureInfo.InvariantCulture),
                 float f => f.ToString("F2", CultureInfo.InvariantCulture),
                 double d => d.ToString("F2", CultureInfo.InvariantCulture),
-                Vector3 v => $"({v.x:F2}, {v.y:F2}, {v.z:F2})",
+                Vector2 v2 => $"({v2.x:F2}, {v2.y:F2})",
+                Vector3 v3 => $"({v3.x:F2}, {v3.y:F2}, {v3.z:F2})",
+                Vector3Int v3i => $"({v3i.x:F2}, {v3i.y:F2}, {v3i.z:F2})",
+                Quaternion q => $"Q: {ToStringDebug(q.eulerAngles)}",
                 _ => value.ToString()
             };
         }
@@ -44,16 +47,16 @@ namespace CoSeph.Core
 
             foreach (T item in collection)
             {
-                if (count >= start)
+                if (count >= start && item != null)
                 {
-                    if (end > 0
-                        && count <= end)
+                    if ((end <= 0)
+                        || (count <= end))
                     {
                         if (count > 0)
                             sb.Append(",");
 
                         count++;
-                        sb.Append(item?.ToStringDebug());
+                        sb.Append(item.ToStringDebug());
                     }
 
                     if (count > COLLECTIONDEBUGLIMIT)
@@ -81,7 +84,7 @@ namespace CoSeph.Core
 
             if (start > 0 || end > 0)
             {
-                // to give context for the actual collection leg entry
+                // to give context for the constrained collection leg entry
                 Debug.Log($"DebugLogCollection with start {start} end {end}");
                 if (end - start > COLLECTIONDEBUGLIMIT)
                     Debug.LogWarning($"Range is too long - log will be truncated at {COLLECTIONDEBUGLIMIT} entries");

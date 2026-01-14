@@ -7,7 +7,8 @@ namespace CoSeph.Core
     {
         Widest,
         Tallest,
-        Largest // most internal area
+        Largest, // most internal area
+        Squarest // smallest difference between width and height
     }
 
     /// <summary>
@@ -59,6 +60,8 @@ namespace CoSeph.Core
             return angleOut;
         }
 
+        // refers a highest-favourite valuation for the rect by selectPref
+        // must be greater than 0 for any valid rect
         private static float GetRectPreferredValue(Rect rect, RectSelectionPreference selectPref)
         {
             switch (selectPref)
@@ -70,7 +73,42 @@ namespace CoSeph.Core
                 default:
                 case RectSelectionPreference.Largest:
                     return rect.Area();
+                case RectSelectionPreference.Squarest:
+                    return 1f / (1f + Mathf.Abs(rect.width - rect.height));
             }
+        }
+
+        /// <summary>
+        /// Selects a Rect from the provided list of Rects, arbitrating by the provided
+        /// criterion.
+        /// </summary>
+        /// <param name="rectList">A list of the rects to check</param>
+        /// <param name="selectPref">The selection criterion</param>
+        /// <returns>The selected Rect</returns>
+        public static List<Rect> SelectRectByPreferredValue(List<Rect> rectList, RectSelectionPreference selectPref)
+        {
+            if (rectList == null || rectList.Count == 0)
+                return new List<Rect>();
+
+            List<Rect> rectBest = new List<Rect>() { rectList[0] };
+            float valueBest = GetRectPreferredValue(rectList[0], selectPref);
+
+            for (int i = 1; i < rectList.Count; i++)
+            {
+                float valueCheck = GetRectPreferredValue(rectList[i], selectPref);
+                if (valueCheck > valueBest)
+                {
+                    rectBest.Clear();
+                    rectBest.Add(rectList[i]);
+                    valueBest = valueCheck;
+                }
+                else if (valueCheck == valueBest)
+                {
+                    rectBest.Add(rectList[i]);
+                }
+            }
+
+            return rectBest;
         }
 
         /// <summary>
@@ -87,19 +125,9 @@ namespace CoSeph.Core
         /// 
         /// Sample under Samples/BiggestRect/
         /// </summary>
-        public static bool BiggestRect(out Rect result, List<Vector3Int> points, Vector3Int pointStart, RectSelectionPreference selectPref, int minWidth = 1, int minHeight = 1, bool deterministicTies = false)
+        public static bool BiggestRect(out Rect result, List<Vector3Int> points, Vector3Int pointStart, RectSelectionPreference[] selectPrefs, int minWidth = 1, int minHeight = 1, bool deterministicTies = false)
         {
             List<Rect> rectAll = BiggestRectAll(points, pointStart, minWidth, minHeight);
-            float biggestSize;
-            List<Rect> rectMatch = new List<Rect>();
-
-#if UNITY_EDITOR
-            string DEBUGSTRING = "rects found: " + rectAll.Count;
-            for (int i = 0; i < rectAll.Count; i++)
-                DEBUGSTRING += "  " + rectAll[i];
-
-            Debug.Log(DEBUGSTRING);
-#endif
 
             if (rectAll.Count == 0)
             {
@@ -107,35 +135,27 @@ namespace CoSeph.Core
                 return false;
             }
 
-            rectMatch.Add(rectAll[0]);
-            biggestSize = GetRectPreferredValue(rectAll[0], selectPref);
-
-            for (int i = 1; i < rectAll.Count; i++)
+            // iterate through selection prefs, filtering the list down with each in order if needed
+            for (int i = 0; i < selectPrefs.Length; i++)
             {
-                float biggestSizeCompare = GetRectPreferredValue(rectAll[i], selectPref);
-
-                if (biggestSizeCompare > biggestSize)
-                {
-                    // clear old matches
-                    rectMatch.Clear();
-                    rectMatch.Add(rectAll[i]);
-                    biggestSize = biggestSizeCompare;
-                }
-                else if (biggestSizeCompare == biggestSize)
-                {
-                    // add to the existing matches
-                    rectMatch.Add(rectAll[i]);
-                }
+                if (rectAll.Count > 1)
+                    rectAll = SelectRectByPreferredValue(rectAll, selectPrefs[i]);
             }
 
-            if (deterministicTies)
+            // tie break
+            if (rectAll.Count > 1)
             {
-                int seed = pointStart.GetHashCode();
-                System.Random rng = new System.Random(seed);
-                result = rectMatch[rng.Next(rectMatch.Count)];
+                if (deterministicTies)
+                {
+                    int seed = pointStart.GetHashCode();
+                    System.Random rng = new System.Random(seed);
+                    result = rectAll[rng.Next(rectAll.Count)];
+                }
+                else
+                    result = rectAll[Random.Range(0, rectAll.Count)];
             }
             else
-                result = rectMatch[Random.Range(0, rectMatch.Count)];
+                result = rectAll[0];
 
             return true;
         }
@@ -151,15 +171,19 @@ namespace CoSeph.Core
         private class Span
         {
             private int spanY; // Fixed Y coordinate shared by all points in this span
+            private HashSet<Vector3Int> spanPoints = new HashSet<Vector3Int>();
+            private bool spanValid;
             private int xMin;
             private int xMax;
+            public int SpanY => spanY;
             public int PointCount => spanPoints.Count;
+            public bool Valid => spanValid;
             public int XMin => xMin;
             public int XMax => xMax;
-            private HashSet<Vector3Int> spanPoints = new HashSet<Vector3Int>();
 
             public Span(Vector3Int point)
             {
+                spanValid = false;
                 spanY = point.y;
                 AddPoint(point);
                 xMin = int.MaxValue;
@@ -215,6 +239,7 @@ namespace CoSeph.Core
                 }
 
                 xMin = xMax = pointStart.x;
+                spanValid = true;
 
                 // PointCount is a defensive upper bound to guarantee termination.
                 // If reached, the span must be perfectly contiguous in at least one direction;
@@ -252,9 +277,9 @@ namespace CoSeph.Core
             // Any rectangle including pointStart cannot exceed these limits.
             public void ClampLimits(Span spanReference)
             {
-                if (spanReference.XMax > xMax)
+                if (spanReference.XMax < xMax)
                     xMax = spanReference.XMax;
-                if (spanReference.XMin < xMin)
+                if (spanReference.XMin > xMin)
                     xMin = spanReference.XMin;
             }
         }
@@ -289,14 +314,13 @@ namespace CoSeph.Core
         public static List<Rect> BiggestRectAll(List<Vector3Int> points, Vector3Int pointStart, int minWidth = 1, int minHeight = 1)
         {
             List<Rect> output = new List<Rect>();
-            HashSet<Vector3Int> pointsSet = new HashSet<Vector3Int>(points); // convert for faster checks as we need to use .Contains a lot here
-            // spansByY matches the key (a y value) to a Span (points, xMin and xMax value)
+            // spansByY matches the key (y value) to a Span (collection of points)
             Dictionary<int, Span> spansByY = new Dictionary<int, Span>();
             int spanYMin, spanYMax;
             Span spanStart;
 
             // if pointStart is not in points, no rectangles are possible
-            if (!pointsSet.Contains(pointStart))
+            if (!points.Contains(pointStart))
                 return output;
 
             // Group points into horizontal spans keyed by Y coordinate,
@@ -390,13 +414,14 @@ namespace CoSeph.Core
                     canIncreaseY = true;
                     canDecreaseY = true;
 
+                    // step up and down one span at a time until a span doesn't meet the requirements
                     for (int i = 1; i < spanCountLimit; i++)
                     {
                         if (canIncreaseY)
                         {
                             int checkY = pointStart.y + i;
 
-                            if (spansByY.ContainsKey(checkY))
+                            if (spansByY.ContainsKey(checkY) && spansByY[checkY].Valid)
                             {
                                 if (spansByY[checkY].XMin > rectXMin
                                     || spansByY[checkY].XMax < rectXMax)
@@ -405,33 +430,29 @@ namespace CoSeph.Core
                                     canIncreaseY = false;
                                 }
                                 else
-                                    rectYMax = pointStart.y + i;
+                                    rectYMax = checkY;
                             }
                             else
-                            {
                                 canIncreaseY = false;
-                            }
                         }
 
                         if (canDecreaseY)
                         {
                             int checkY = pointStart.y - i;
 
-                            if (spansByY.ContainsKey(checkY))
+                            if (spansByY.ContainsKey(checkY) && spansByY[checkY].Valid)
                             {
                                 if (spansByY[checkY].XMin > rectXMin
-                                    || spansByY [checkY].XMax < rectXMax)
+                                    || spansByY[checkY].XMax < rectXMax)
                                 {
                                     // span can not permit these limits
                                     canDecreaseY = false;
                                 }
                                 else
-                                    rectYMin = pointStart.y - i;
+                                    rectYMin = checkY;
                             }
                             else
-                            {
                                 canDecreaseY = false;
-                            }
 
                         }
 
@@ -440,19 +461,6 @@ namespace CoSeph.Core
                         {
                             // we've found the biggest rect with this xmin and xmax
                             // validate and add
-
-                            // IMPORTANT: Rectangle enumeration order guarantees correctness here.
-                            // Rectangles are generated in strictly decreasing width order for any given
-                            // (rectYMin, rectYMax) pair. Therefore, if the previous rectangle has the same
-                            // vertical bounds, the current rectangle must be narrower and cannot be maximal.
-                            // Changing loop ordering or enumeration strategy will invalidate this assumption.
-                            if (output.Count > 0)
-                            {
-                                if (output[output.Count - 1].yMin == rectYMin
-                                    && output[output.Count - 1].yMax + 1 == rectYMax)
-                                    continue;
-                            }
-
 
                             Vector2 corner = new Vector2(rectXMin, rectYMin);
                             Vector2 size = new Vector2(rectXMax - rectXMin + 1, rectYMax - rectYMin + 1);
@@ -470,7 +478,12 @@ namespace CoSeph.Core
             return output;
         }
 
-        // returns all points (integer coordinates) in the provided area (yMax and xMax exclusive)
+        /// <summary>
+        /// returns all points (integer coordinates with z = 0) in the provided area
+        /// (yMax and xMax exclusive)
+        /// </summary>
+        /// <param name="area">The area to define points in</param>
+        /// <returns>A list of all points</returns>
         public static List<Vector3Int> AllPointsInArea(Rect area)
         {
             List<Vector3Int> output = new List<Vector3Int>();

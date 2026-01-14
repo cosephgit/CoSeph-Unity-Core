@@ -370,13 +370,15 @@ MonoBehaviour:
     y: 20
     width: 160
     height: 40
-  _rectMinX: 1
-  _rectMinY: 1
   _gridWidth: 30
   _gridheight: 18
   _gridMaxScreen: 0.8
-  _nodeChance: 0.6
+  _nodeChance: 0.7
   _nodeWidth: 0.5
+  _rectMinX: 2
+  _rectMinY: 2
+  _rectChoices: 0200000003000000
+  _rectDeterministic: 0
   _colorNode: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   _colorNodeHighlight: {r: 1, g: 0, b: 0.8834677, a: 1}
   _colorRectFound: {r: 0, g: 0.5999684, b: 0.7169812, a: 1}
