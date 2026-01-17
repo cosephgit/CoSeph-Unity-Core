@@ -26,6 +26,7 @@ https://github.com/cosephgit/CoSeph-Unity-Core.git?path=/package
   - Extensions/
   - Math/
   - SampleScripts/
+  - SplashScreen/
   - StateMachine/
   - Utils/
 
@@ -37,6 +38,7 @@ https://github.com/cosephgit/CoSeph-Unity-Core.git?path=/package
   - BiggestRect - scene demonstrating CSMathGeometry.BiggestRect method
   - Parallax - scene demonstrating CSParallax class
   - EffectTimed - scene demonstrating CSEffectTimed class
+  - SplashScene - scene demonstrating CSSplashScreenManager class
 
 ## License
 MIT. See LICENSE.
