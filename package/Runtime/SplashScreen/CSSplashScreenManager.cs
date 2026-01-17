@@ -201,6 +201,14 @@ namespace CoSeph.Core
         /// <summary>
         /// Returns true while a splash screen is currently playing.
         /// </summary>
+        public bool IsPrepping()
+        {
+            return (_screenIndexCurrent < 0
+                && _splashSequence != null);
+        }
+        /// <summary>
+        /// Returns true while a splash screen is currently playing.
+        /// </summary>
         public bool IsPlaying()
         {
             return (_screenIndexCurrent >= 0

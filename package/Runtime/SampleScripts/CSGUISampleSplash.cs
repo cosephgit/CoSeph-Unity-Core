@@ -17,20 +17,28 @@ namespace CoSeph.Core
         {
             bool isWaiting = false;
             bool isPlaying = false;
+            bool isPrepping = false;
+
+            GUI.enabled = true;
 
             if (_sampleSplashManager)
             {
                 isWaiting = _sampleSplashManager.IsWaiting();
+                isPrepping = _sampleSplashManager.IsPrepping();
                 isPlaying = _sampleSplashManager.IsPlaying();
-            }
 
-            GUI.enabled = true;
-            if (isWaiting)
-                GUI.TextField(_textRectStatus, "Ready: ");
-            else if (isPlaying)
-                GUI.TextField(_textRectStatus, "Playing: ");
+                if (isWaiting)
+                    GUI.TextField(_textRectStatus, "Ready");
+                else if (isPrepping)
+                    GUI.TextField(_textRectStatus, "Preparing");
+                else if (isPlaying)
+                    GUI.TextField(_textRectStatus, "Playing");
+                else
+                    GUI.TextField(_textRectStatus, "Finished");
+            }
             else
-                GUI.TextField(_textRectStatus, "Finished: ");
+                GUI.TextField(_textRectStatus, "No splash manager");
+
 
             GUI.enabled = isWaiting;
             if (GUI.Button(_buttonRectStart, "Start CSSplashScreenManager"))

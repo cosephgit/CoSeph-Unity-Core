@@ -563,7 +563,7 @@ GameObject:
   - component: {fileID: 1016205991}
   - component: {fileID: 1016205992}
   m_Layer: 0
-  m_Name: SampleSplashSceneGUI
+  m_Name: GUISampleSplashScene
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

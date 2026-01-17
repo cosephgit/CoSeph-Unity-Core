@@ -3,10 +3,10 @@ using UnityEngine;
 namespace CoSeph.Core.Editor
 {
     /// <summary>
-    /// Simple gizmo script for activating a CSTimedEffect class
+    /// Simple GUI script for activating a CSTimedEffect class
     /// Shows a button to activate it, and a button to progress the timer
     /// </summary>
-    public class CSGizmoTimedEffect : MonoBehaviour
+    public class CSGUISampleTimedEffect : MonoBehaviour
     {
         // Button position and size
         [SerializeField] private Rect _buttonRectStart = new Rect(20, 20, 160, 40);
