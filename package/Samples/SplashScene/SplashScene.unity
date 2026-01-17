@@ -168,7 +168,7 @@ MonoBehaviour:
   _content: {fileID: 0}
   _bgColor: {r: 0, g: 0, b: 0, a: 0}
   _minContinue: 0
-  _autoContinue: 100
+  _autoContinue: 4
   _failTimeout: 5
 --- !u!1 &357405915
 GameObject:
