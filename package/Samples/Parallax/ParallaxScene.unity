@@ -1362,7 +1362,7 @@ GameObject:
   - component: {fileID: 1943062295}
   - component: {fileID: 1943062294}
   m_Layer: 0
-  m_Name: GizmoParallax
+  m_Name: GUIParallax
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1380,20 +1380,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1abde0debef10624b97cb1f3ac9054ba, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CoSeph.Core::CoSeph.Core.CSParallaxSample
-  buttonRectLeft:
+  _buttonRectLeft:
     serializedVersion: 2
     x: 20
     y: 20
     width: 160
     height: 40
-  buttonRectRight:
+  _buttonRectRight:
     serializedVersion: 2
     x: 20
     y: 20
     width: 160
     height: 40
-  cameraTransform: {fileID: 978995135}
-  cameraStepRight: {x: 5, y: 0, z: 0}
+  _cameraTransform: {fileID: 978995135}
+  _cameraStepRight: {x: 5, y: 0, z: 0}
 --- !u!4 &1943062295
 Transform:
   m_ObjectHideFlags: 0
@@ -1447,5 +1447,5 @@ SceneRoots:
   m_Roots:
   - {fileID: 978995135}
   - {fileID: 246870763}
-  - {fileID: 1943062295}
   - {fileID: 117057458}
+  - {fileID: 1943062295}

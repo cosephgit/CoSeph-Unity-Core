@@ -295,7 +295,7 @@ GameObject:
   - component: {fileID: 1699371890}
   - component: {fileID: 1699371889}
   m_Layer: 0
-  m_Name: EffectTimedGUI
+  m_Name: GUIEffectTimed
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -313,19 +313,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f4bbb217c23b5694e8a4390bfff3459f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CoSeph.Core::CoSeph.Core.Editor.CSGizmoTimedEffect
-  buttonRectStart:
+  _buttonRectStart:
     serializedVersion: 2
     x: 20
     y: 20
     width: 160
     height: 40
-  buttonRectProgress:
+  _buttonRectProgress:
     serializedVersion: 2
     x: 200
     y: 20
     width: 160
     height: 40
-  effect: {fileID: 6964466587875858294}
+  _effect: {fileID: 6964466587875858294}
 --- !u!4 &1699371890
 Transform:
   m_ObjectHideFlags: 0
@@ -483,7 +483,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4590552787587788993, guid: ff17196190ed76a45851bb02649b888a, type: 3}
       propertyPath: m_Name
-      value: EffectTimed1
+      value: EffectTimed
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -508,5 +508,5 @@ SceneRoots:
   - {fileID: 1897188152}
   - {fileID: 822950490}
   - {fileID: 6964466587875858293}
-  - {fileID: 1699371890}
   - {fileID: 1161581345}
+  - {fileID: 1699371890}

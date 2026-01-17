@@ -1,6 +1,7 @@
 {
   "name": "CoSeph.Core",
   "rootNamespace": "CoSeph.Core",
-  "references": ["Unity.Localization"],
-  "includePlatforms": []
+  "references": ["UnityEngine.Video"],
+  "includePlatforms": [],
+  "autoReferenced": true
 }

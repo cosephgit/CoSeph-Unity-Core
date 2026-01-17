@@ -8,7 +8,7 @@ namespace CoSeph.Core
     /// A Gizmo to demonstrate the functionality of the BiggestRect method
     /// GUI Buttons allow generating Vector3Int sheet grids and find Rects in them
     /// </summary>
-    public class CSGizmoBiggestRect : MonoBehaviour
+    public class CSGUISampleBiggestRect : MonoBehaviour
     {
         [Header("Button placements")]
         [SerializeField] private Rect _buttonPlaceNodes = new Rect(20, 20, 160, 40);
